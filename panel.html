@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Panel</title>
+	<link rel="stylesheet" type="text/css" href="panel.css" />
+</head>
+<body>
+<h1>Panel</h1>
+<div id="scriptStatus" >
+	<p id="injected-instrumented" class="instrument-status">Tab and frames instrumented.</p>
+	<p id="executed-instrumented" class="instrument-status">Tab instrumented. Frames might not work.</p>
+	<p id="not-instrumented" class="instrument-status">Tab not instrumented.</p>
+	<div id="reload-button" >Reload</div>
+</div>
+<form>
+	<p><input type="checkbox" id="instrument-canvas" /> <label for="instrument-canvas" >Instrument canvas</label></p>
+	<p><input type="checkbox" id="instrument-createProgram" /> <label for="instrument-createProgram" >Instrument createProgram</label></p>
+	<p><input type="checkbox" id="autoinstrument" /> <label for="autoinstrument" >Auto-instrument</label></p>
+</form>
+<div>
+	<p>Canvas: <span id="canvas-count" ></span></p>
+	<p>Program: <span id="program-count" ></span></p>
+	<p>DrawElements: <span id="draw-elements" ></span></p>
+</div>
+<script src="panel.js"></script>
+</body>
+</html>
+
