@@ -6,15 +6,17 @@
 }
 
 #perfmeter-panel{
+	pointer-events: none;
 	all: initial;
 	font-family: "Roboto mono";
 	font-size: 10px;
 	position: fixed;
 	background-color: rgba( 0, 0, 0, .5 );
 	padding: 10px;
-	right: 0;
-	top: 0;
+	right: 5px;
+	top: 5px;
 	color: white;
 	text-shadow: 0 -1px 0 #000;
 	z-index: 2147483647;
+	white-space: pre;
 }

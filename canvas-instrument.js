@@ -331,7 +331,14 @@ if( !window.__PerfMeterInstrumented ) {
 	function update(){
 
 		var totalDrawCount = drawCount + instancedDrawCount
-		text.innerHTML = 'FPS: ' + framerate.toFixed( 2 ) + '<br/>JS Time: ' + JavaScriptTime.toFixed( 2 ) + '<br/>WebGL JS time: ' + JavaScriptWebGLTime.toFixed( 2 ) + '<br/>GPU Time: ' + ( disjointTime / 1000000 ).toFixed( 2 ) + '<br/>Draw: ' + drawCount + '<br/>Instanced: ' + instancedDrawCount + '<br/>Total: ' + totalDrawCount;
+		text.innerHTML = `FPS: ${framerate.toFixed( 2 )}
+JS Time: ${JavaScriptTime.toFixed( 2 )}
+WebGL JS time: ${JavaScriptWebGLTime.toFixed( 2 )}
+GPU Time: ${( disjointTime / 1000000 ).toFixed( 2 )}
+Draw: ${drawCount}
+Instanced: ${instancedDrawCount}
+Total: ${totalDrawCount}
+Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}`;
 
 		if( verbose ) log( 'update', totalDrawCount );
 
