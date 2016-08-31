@@ -60,6 +60,10 @@ if( !window.__PerfMeterInstrumented ) {
 
 	var canvasCount = 0;
 	var contexts = [];
+	var vendor = '';
+	var renderer = '';
+	var glVersion = '';
+	var glslVerion = '';
 
 	HTMLCanvasElement.prototype.getContext = _h( HTMLCanvasElement.prototype.getContext,
 		function() {
@@ -71,6 +75,13 @@ if( !window.__PerfMeterInstrumented ) {
 		},
 		function( res, args ) {
 			if( args[ 0 ] === 'webgl' || args[ 0 ] === 'experimental-webgl' || args[ 0 ] === 'webgl2' ) {
+
+				var debugInfo = res.getExtension( 'WEBGL_debug_renderer_info' );
+				vendor = res.getParameter( debugInfo.UNMASKED_VENDOR_WEBGL );
+				renderer = res.getParameter( debugInfo.UNMASKED_RENDERER_WEBGL );
+				glVersion = res.getParameter( res.VERSION );
+				glslVersion = res.getParameter( res.SHADING_LANGUAGE_VERSION );
+
 				var queryExt = res.getExtension("EXT_disjoint_timer_query");
 				if( queryExt ) {
 					contexts.push( {
@@ -342,7 +353,11 @@ Programs: ${programCount}
 Draw: ${drawCount}
 Instanced: ${instancedDrawCount}
 Total: ${totalDrawCount}
-Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}`;
+Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}`
+//GL Version: ${glVersion}
+//GLSL Version: ${glslVersion}
+//Vendor: ${vendor}
+//Renderer: ${renderer}`;
 
 	}
 
