@@ -331,6 +331,15 @@ if( !window.__PerfMeterInstrumented ) {
 
 		frameId++;
 
+		/*if( programCount === 0 ) {
+			contexts.forEach( gl => {
+				var res = gl.getParameter( gl.CURRENT_PROGRAM );
+				debugger;
+			} )
+		}*/
+
+		frameTime = getTime() - oTime;
+
 		update();
 
 		programCount = 0;
