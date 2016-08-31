@@ -55,18 +55,7 @@ function onScriptMessage( msg ) {
 
 	switch( msg.method ) {
 		case 'ready':
-		document.getElementById( 'canvas-count' ).textContent = '0';
-		document.getElementById( 'program-count' ).textContent = '0';
-		document.getElementById( 'draw-elements' ).textContent = '0';
 		updateScriptStatus();
-		break;
-		case 'new canvas':
-		document.getElementById( 'canvas-count' ).textContent = msg.count;
-		break;
-		case 'new program':
-		document.getElementById( 'program-count' ).textContent = msg.count;
-		case 'drawcalls':
-		document.getElementById( 'draw-elements' ).textContent = msg.count;
 		break;
 	}
 
