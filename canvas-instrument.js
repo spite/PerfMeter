@@ -84,27 +84,13 @@ if( !window.__PerfMeterInstrumented ) {
 		}
 	);
 
-	/*if( settings.createProgram ) {
-
-		var programCount = 0;
-
-		var createProgram = WebGLRenderingContext.prototype.createProgram;
-		WebGLRenderingContext.prototype.createProgram = function() {
-
-			programCount++;
-			//post( { method: 'new program', count: programCount } );
-
-			if( verbose ) log( 'createProgram', arguments );
-
-			return createProgram.apply( this, [] );
-		}
-	}*/
 
 	var drawCount = 0;
 	var instancedDrawCount = 0;
 	var pointCount = 0;
 	var lineCount = 0;
 	var triangleCount = 0;
+	var programCount = 0;
 
 	var JavaScriptWebGLTime = 0;
 
@@ -123,6 +109,14 @@ if( !window.__PerfMeterInstrumented ) {
 
 			drawCount ++;
 			return drawArrays.apply( this, arguments );
+
+		}
+
+		var useProgram = proto.prototype.useProgram;
+		proto.prototype.useProgram = function() {
+
+			programCount++;
+			return useProgram.apply( this, arguments );
 
 		}
 
@@ -327,26 +321,28 @@ if( !window.__PerfMeterInstrumented ) {
 
 		update();
 
+		programCount = 0;
+		drawCount = 0;
+		instancedDrawCount = 0;
+
 	}
 
 	originalRAF( process );
 
 	function update(){
 
+		if( canvasCount === 0 ) return;
+
 		var totalDrawCount = drawCount + instancedDrawCount
 		text.innerHTML = `FPS: ${framerate.toFixed( 2 )}
 JS Time: ${JavaScriptTime.toFixed( 2 )}
 WebGL JS time: ${JavaScriptWebGLTime.toFixed( 2 )}
 GPU Time: ${( disjointTime / 1000000 ).toFixed( 2 )}
+Programs: ${programCount}
 Draw: ${drawCount}
 Instanced: ${instancedDrawCount}
 Total: ${totalDrawCount}
 Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}`;
-
-		if( verbose ) log( 'update', totalDrawCount );
-
-		drawCount = 0;
-		instancedDrawCount = 0;
 
 	}
 
