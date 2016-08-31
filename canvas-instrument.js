@@ -55,6 +55,9 @@ if( !window.__PerfMeterInstrumented ) {
 		};
 	}
 
+	var WebGLAvailable = 'WebGLRenderingContext' in window;
+	var WebGL2Available = 'WebGL2RenderingContext' in window;
+
 	var canvasCount = 0;
 	var contexts = [];
 
@@ -148,9 +151,9 @@ if( !window.__PerfMeterInstrumented ) {
 	}
 
 	instrumentContext( WebGLRenderingContext );
-	instrumentContext( WebGL2RenderingContext );
+	if( WebGL2Available ) instrumentContext( WebGL2RenderingContext );
 
-	if( 'WebGL2RenderingContext' in window ) {
+	if( WebGL2Available ) {
 
 		var drawElements2 = WebGL2RenderingContext.prototype.drawElements;
 		WebGL2RenderingContext.prototype.drawElements = function() {
@@ -199,7 +202,7 @@ if( !window.__PerfMeterInstrumented ) {
 
 	// WebGL2
 
-	if( 'WebGL2RenderingContext' in window ) {
+	if( WebGL2Available ) {
 
 		var drawElementsInstanced = WebGL2RenderingContext.prototype.drawElementsInstanced;
 		WebGL2RenderingContext.prototype.drawElementsInstanced = function() {
