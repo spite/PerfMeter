@@ -259,6 +259,7 @@ if( !window.__PerfMeterInstrumented ) {
 	var JavaScriptTime = 0;
 	var disjointFrames = {};
 	var disjointTime = 0;
+	var frameTime = 0;
 
 	window.requestAnimationFrame = function( c ) {
 
@@ -346,6 +347,7 @@ if( !window.__PerfMeterInstrumented ) {
 
 		var totalDrawCount = drawCount + instancedDrawCount
 		text.innerHTML = `FPS: ${framerate.toFixed( 2 )}
+Frame Time: ${frameTime.toFixed(2)}
 JS Time: ${JavaScriptTime.toFixed( 2 )}
 WebGL JS time: ${JavaScriptWebGLTime.toFixed( 2 )}
 GPU Time: ${( disjointTime / 1000000 ).toFixed( 2 )}
