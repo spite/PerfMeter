@@ -6,8 +6,6 @@ var script = '';
 
 var defaultSettings = {
 
-	canvas: true,
-	createProgram: true,
 	autoinstrument: true
 
 }
