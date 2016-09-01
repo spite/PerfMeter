@@ -139,6 +139,28 @@ Renderer: ${v.renderer}
 		}
 	);
 
+	function updateDrawCount( gl, ctx, mode, count ) {
+
+		switch( mode ){
+			case gl.POINTS:
+				ctx.points += count;
+				break;
+			case gl.LINE_STRIP:
+			case gl.LINE_LOOP:
+			case gl.LINES:
+				ctx.lines += count / 2;
+				break;
+			case gl.TRIANGLE_STRIP:
+			case gl.TRIANGLE_FAN:
+				ctx.triangles += count - 2;
+				break;
+			case gl.TRIANGLES:
+				ctx.triangles += count / 3;
+				break;
+		}
+
+	}
+
 	function instrumentContext( proto ) {
 
 		var drawElements = proto.prototype.drawElements;
@@ -148,26 +170,7 @@ Renderer: ${v.renderer}
 
 			ctx.drawCount ++;
 
-			var mode = arguments[ 0 ];
-			var count = arguments[ 1 ]
-
-			switch( mode ){
-				case this.POINTS:
-					ctx.points += count;
-					break;
-				case this.LINE_STRIP:
-				case this.LINE_LOOP:
-				case this.LINES:
-					ctx.lines += count / 2;
-					break;
-				case this.TRIANGLE_STRIP:
-				case this.TRIANGLE_FAN:
-					ctx.triangles += count - 2;
-					break;
-				case this.TRIANGLES:
-					ctx.triangles += count / 3;
-					break;
-			}
+			updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 1 ] );
 
 			return drawElements.apply( this, arguments );
 
@@ -180,26 +183,7 @@ Renderer: ${v.renderer}
 
 			ctx.drawCount ++;
 
-			var mode = arguments[ 0 ];
-			var count = arguments[ 2 ]
-
-			switch( mode ){
-				case this.POINTS:
-					ctx.points += count;
-					break;
-				case this.LINE_STRIP:
-				case this.LINE_LOOP:
-				case this.LINES:
-					ctx.lines += count / 2;
-					break;
-				case this.TRIANGLE_STRIP:
-				case this.TRIANGLE_FAN:
-					ctx.triangles += count - 2;
-					break;
-				case this.TRIANGLES:
-					ctx.triangles += count / 3;
-					break;
-			}
+			updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 2 ] );
 
 			return drawArrays.apply( this, arguments );
 
@@ -252,7 +236,7 @@ Renderer: ${v.renderer}
 	instrumentContext( WebGLRenderingContext );
 	if( glInfo.WebGL2Available ) instrumentContext( WebGL2RenderingContext );
 
-	if( glInfo.WebGL2Available ) {
+	/*if( glInfo.WebGL2Available ) {
 
 		var drawElements2 = WebGL2RenderingContext.prototype.drawElements;
 		WebGL2RenderingContext.prototype.drawElements = function() {
@@ -270,7 +254,7 @@ Renderer: ${v.renderer}
 
 		}
 
-	}
+	}*/
 
 	// WebGL with ANGLE_instanced_arrays Extension
 	// There isn't an available ANGLEInstancedArrays constructor
@@ -282,18 +266,28 @@ Renderer: ${v.renderer}
 		log( 'Extension', arguments[ 0 ] );
 		var res = getExtension.apply( this, arguments );
 		var gl = this;
+		var ctx = contexts.get( gl );
 
 		if( arguments[ 0 ] === 'ANGLE_instanced_arrays' ){
+
 			var drawArraysInstancedANGLE = res.drawArraysInstancedANGLE;
 			res.drawArraysInstancedANGLE = function() {
-				contexts.get( gl ).instancedDrawCount++;
+
+				ctx.instancedDrawCount++;
+				updateDrawCount( gl, ctx, arguments[ 0 ], arguments[ 2 ] );
 				return drawArraysInstancedANGLE.apply( this, arguments );
+
 			}
+
 			var drawElementsInstancedANGLE = res.drawElementsInstancedANGLE;
 			res.drawElementsInstancedANGLE = function() {
-				contexts.get( gl ).instancedDrawCount++;
+
+				ctx.instancedDrawCount++;
+				updateDrawCount( gl, ctx, arguments[ 0 ], arguments[ 1 ] );
 				return drawElementsInstancedANGLE.apply( this, arguments );
+
 			}
+
 		}
 
 		return res;
@@ -307,7 +301,9 @@ Renderer: ${v.renderer}
 		var drawElementsInstanced = WebGL2RenderingContext.prototype.drawElementsInstanced;
 		WebGL2RenderingContext.prototype.drawElementsInstanced = function() {
 
-			contexts.get( this ).instancedDrawCount ++;
+			var ctx = contexts.get( this );
+			ctx.instancedDrawCount ++;
+			updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 1 ] );
 			return drawElementsInstanced.apply( this, arguments );
 
 		}
@@ -315,7 +311,9 @@ Renderer: ${v.renderer}
 		var drawArraysInstanced = WebGL2RenderingContext.prototype.drawArraysInstanced;
 		WebGL2RenderingContext.prototype.drawArraysInstanced = function() {
 
-			contexts.get( this ).instancedDrawCount ++;
+			var ctx = contexts.get( this );
+			ctx.instancedDrawCount ++;
+			updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 2 ] );
 			return drawArraysInstanced.apply( this, arguments );
 
 		}
