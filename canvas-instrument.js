@@ -222,14 +222,15 @@ Renderer: ${v.renderer}
 			try {
 				if( typeof proto.prototype[ j ] === 'function' ){
 					( function( id ) {
+						var fn = j;
 						var time;
-						proto.prototype[ j ] = _h(
-							proto.prototype[ j ],
+						proto.prototype[ fn ] = _h(
+							proto.prototype[ fn ],
 							function() {
 								time = getTime();
 							},
 							function() {
-								if( settings.logOperations ) contexts.get( this ).log.push( j );
+								if( settings.logOperations ) contexts.get( this ).log.push( fn );
 								contexts.get( this ).JavaScriptTime += getTime() - time;
 							}
 							);
