@@ -122,7 +122,7 @@ Renderer: ${v.renderer}
 
 			contexts.set( res, ctx );
 
-			if( args[ 0 ] === 'webgl' || args[ 0 ] === 'experimental-webgl' || args[ 0 ] === 'webgl2' ) {
+			if( [ 'webgl', 'experimental-webgl', 'webgl2', 'experimental-webgl2' ].some( id => id == args[ 0 ] ) ) {
 
 				ctx.type = '3d';
 
