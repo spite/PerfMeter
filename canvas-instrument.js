@@ -117,7 +117,11 @@ Renderer: ${v.renderer}
 				triangleCount: 0,
 				programCount: 0,
 				textureCount: 0,
-				JavaScriptTime: 0
+				JavaScriptTime: 0,
+				points: 0,
+				lines: 0,
+				triangles: 0,
+				log: []
 			}
 
 			contexts.set( res, ctx );
@@ -140,7 +144,29 @@ Renderer: ${v.renderer}
 		var drawElements = proto.prototype.drawElements;
 		proto.prototype.drawElements = function() {
 
-			contexts.get( this ).drawCount ++;
+			var ctx = contexts.get( this );
+
+			ctx.drawCount ++;
+
+			var mode = arguments[ 0 ];
+			var count = arguments[ 1 ]
+
+			switch( mode ){
+				case this.POINTS:
+					ctx.points += count;
+					break;
+				case this.LINE_STRIP:
+				case this.LINE_LOOP:
+				case this.LINES:
+					ctx.lines += count / 2;
+					break;
+				case this.TRIANGLE_STRIP:
+				case this.TRIANGLE_FAN:
+				case this.TRIANGLES:
+					ctx.triangles += count / 3;
+					break;
+			}
+
 			return drawElements.apply( this, arguments );
 
 		}
@@ -148,7 +174,29 @@ Renderer: ${v.renderer}
 		var drawArrays = proto.prototype.drawArrays;
 		proto.prototype.drawArrays = function() {
 
-			contexts.get( this ).drawCount ++;
+			var ctx = contexts.get( this );
+
+			ctx.drawCount ++;
+
+			var mode = arguments[ 0 ];
+			var count = arguments[ 2 ]
+
+			switch( mode ){
+				case this.POINTS:
+					ctx.points += count;
+					break;
+				case this.LINE_STRIP:
+				case this.LINE_LOOP:
+				case this.LINES:
+					ctx.lines += count / 2;
+					break;
+				case this.TRIANGLE_STRIP:
+				case this.TRIANGLE_FAN:
+				case this.TRIANGLES:
+					ctx.triangles += count / 3;
+					break;
+			}
+
 			return drawArrays.apply( this, arguments );
 
 		}
@@ -399,6 +447,10 @@ Renderer: ${v.renderer}
 			context.textureCount = 0;
 			context.JavaScriptTime = 0;
 			context.disjointTime = 0;
+			context.points = 0;
+			context.lines = 0;
+			context.triangles = 0;
+			context.log = []
 		} );
 
 	}
@@ -416,6 +468,9 @@ Renderer: ${v.renderer}
 		var programCount = 0;
 		var textureCount = 0;
 		var hasWebGL = false;
+		var totalPoints = 0;
+		var totalLines = 0;
+		var totalTriangles = 0;
 
 		contexts.forEach( function( context ) {
 			drawCount += context.drawCount;
@@ -424,6 +479,9 @@ Renderer: ${v.renderer}
 			disjointTime += context.disjointTime;
 			programCount += context.programCount;
 			textureCount += context.textureCount;
+			totalPoints += context.points;
+			totalLines += context.lines;
+			totalTriangles += context.triangles;
 			if( context.type === '3d' ) hasWebGL = true;
 		} );
 
@@ -442,6 +500,9 @@ Textures: ${textureCount}
 Draw: ${drawCount}
 Instanced: ${instancedDrawCount}
 Total: ${totalDrawCount}
+Points: ${totalPoints}
+Lines: ${totalLines}
+Triangles: ${totalTriangles}
 `
 
 		var browser = `<b>Browser</b>
