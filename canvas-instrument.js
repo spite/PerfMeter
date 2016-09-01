@@ -236,26 +236,6 @@ Renderer: ${v.renderer}
 	instrumentContext( WebGLRenderingContext );
 	if( glInfo.WebGL2Available ) instrumentContext( WebGL2RenderingContext );
 
-	/*if( glInfo.WebGL2Available ) {
-
-		var drawElements2 = WebGL2RenderingContext.prototype.drawElements;
-		WebGL2RenderingContext.prototype.drawElements = function() {
-
-			contexts.get( this ).drawCount ++;
-			return drawElements2.apply( this, arguments );
-
-		}
-
-		var drawArrays2 = WebGL2RenderingContext.prototype.drawArrays;
-		WebGL2RenderingContext.prototype.drawArrays = function() {
-
-			contexts.get( this ).drawCount ++;
-			return drawArrays2.apply( this, arguments );
-
-		}
-
-	}*/
-
 	// WebGL with ANGLE_instanced_arrays Extension
 	// There isn't an available ANGLEInstancedArrays constructor
 	// This way feels hacky
