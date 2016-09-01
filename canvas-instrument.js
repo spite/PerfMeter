@@ -105,6 +105,7 @@ if( !window.__PerfMeterInstrumented ) {
 	var lineCount = 0;
 	var triangleCount = 0;
 	var programCount = 0;
+	var textureCount = 0;
 
 	var JavaScriptWebGLTime = 0;
 
@@ -131,6 +132,15 @@ if( !window.__PerfMeterInstrumented ) {
 
 			programCount++;
 			return useProgram.apply( this, arguments );
+
+		}
+
+		var bindTexture = proto.prototype.bindTexture;
+		proto.prototype.bindTexture = function() {
+
+			if( arguments[ 0 ] !== null ) textureCount++;
+
+			return bindTexture.apply( this, arguments );
 
 		}
 
@@ -348,6 +358,7 @@ if( !window.__PerfMeterInstrumented ) {
 		programCount = 0;
 		drawCount = 0;
 		instancedDrawCount = 0;
+		textureCount = 0;
 
 	}
 
@@ -364,14 +375,15 @@ JS Time: ${JavaScriptTime.toFixed( 2 )}
 WebGL JS time: ${JavaScriptWebGLTime.toFixed( 2 )}
 GPU Time: ${( disjointTime / 1000000 ).toFixed( 2 )}
 Programs: ${programCount}
+Textures: ${textureCount}
 Draw: ${drawCount}
 Instanced: ${instancedDrawCount}
 Total: ${totalDrawCount}
-Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}`
-//GL Version: ${glVersion}
-//GLSL Version: ${glslVersion}
-//Vendor: ${vendor}
-//Renderer: ${renderer}`;
+Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}
+GL Version: ${glVersion}
+GLSL Version: ${glslVersion}
+Vendor: ${vendor}
+Renderer: ${renderer}`;
 
 	}
 
