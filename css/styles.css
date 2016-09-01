@@ -13,7 +13,7 @@
 }
 
 #perfmeter-panel{
-	all: unset;
+	all: initial;
 	text-align: right;
 	pointer-events: none;
 	font-family: "Roboto mono";
