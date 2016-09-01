@@ -1,3 +1,5 @@
+'use strict'
+
 var verbose = false;
 
 if( !window.__PerfMeterInstrumented ) {
