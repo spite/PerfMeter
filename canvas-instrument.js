@@ -162,6 +162,8 @@ Renderer: ${v.renderer}
 					break;
 				case this.TRIANGLE_STRIP:
 				case this.TRIANGLE_FAN:
+					ctx.triangles += count - 2;
+					break;
 				case this.TRIANGLES:
 					ctx.triangles += count / 3;
 					break;
@@ -192,6 +194,8 @@ Renderer: ${v.renderer}
 					break;
 				case this.TRIANGLE_STRIP:
 				case this.TRIANGLE_FAN:
+					ctx.triangles += count - 2;
+					break;
 				case this.TRIANGLES:
 					ctx.triangles += count / 3;
 					break;
