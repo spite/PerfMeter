@@ -35,7 +35,6 @@ if( !window.__PerfMeterInstrumented ) {
 
 	var text = document.createElement( 'div' );
 	text.setAttribute( 'id', 'perfmeter-panel' );
-	text.style.pointerEvents = 'none' // doesn't work from the .css ???
 
 	window.addEventListener( 'load', _ => {
 
@@ -61,22 +60,41 @@ if( !window.__PerfMeterInstrumented ) {
 	var WebGLAvailable = 'WebGLRenderingContext' in window;
 	var WebGL2Available = 'WebGL2RenderingContext' in window;
 
-	var canvasCount = 0;
-	var contexts = [];
 	var vendor = '';
 	var renderer = '';
 	var glVersion = '';
 	var glslVersion = '';
+
+	var contexts = new Map();
 
 	HTMLCanvasElement.prototype.getContext = _h( HTMLCanvasElement.prototype.getContext,
 		function() {
 			this.style.border = '1px solid #ff00ff';
 			this.style.boxSizing = 'border-box';
 
-			canvasCount++
 			log( 'getContext', arguments );
 		},
 		function( res, args ) {
+
+			var ctx = {
+				ctx: res,
+				type: args[ 0 ],
+				queryExt: null,
+				queries: [],
+				frames: {},
+				disjointTime: 0,
+				drawCount: 0,
+				instancedDrawCount: 0,
+				pointCount: 0,
+				lineCount: 0,
+				triangleCount: 0,
+				programCount: 0,
+				textureCount: 0,
+				JavaScriptTime: 0
+			}
+
+			contexts.set( res, ctx );
+
 			if( args[ 0 ] === 'webgl' || args[ 0 ] === 'experimental-webgl' || args[ 0 ] === 'webgl2' ) {
 
 				var debugInfo = res.getExtension( 'WEBGL_debug_renderer_info' );
@@ -85,36 +103,21 @@ if( !window.__PerfMeterInstrumented ) {
 				glVersion = res.getParameter( res.VERSION );
 				glslVersion = res.getParameter( res.SHADING_LANGUAGE_VERSION );
 
-				var queryExt = res.getExtension("EXT_disjoint_timer_query");
+				var queryExt = res.getExtension( 'EXT_disjoint_timer_query' );
 				if( queryExt ) {
-					contexts.push( {
-						gl: res,
-						queryExt: queryExt,
-						queries: [],
-						frames: {}
-					} );
+					ctx.queryExt = queryExt;
 				}
 			}
+
 		}
 	);
-
-
-	var drawCount = 0;
-	var instancedDrawCount = 0;
-	var pointCount = 0;
-	var lineCount = 0;
-	var triangleCount = 0;
-	var programCount = 0;
-	var textureCount = 0;
-
-	var JavaScriptWebGLTime = 0;
 
 	function instrumentContext( proto ) {
 
 		var drawElements = proto.prototype.drawElements;
 		proto.prototype.drawElements = function() {
 
-			drawCount ++;
+			contexts.get( this ).drawCount ++;
 			return drawElements.apply( this, arguments );
 
 		}
@@ -122,7 +125,7 @@ if( !window.__PerfMeterInstrumented ) {
 		var drawArrays = proto.prototype.drawArrays;
 		proto.prototype.drawArrays = function() {
 
-			drawCount ++;
+			contexts.get( this ).drawCount ++;
 			return drawArrays.apply( this, arguments );
 
 		}
@@ -130,7 +133,7 @@ if( !window.__PerfMeterInstrumented ) {
 		var useProgram = proto.prototype.useProgram;
 		proto.prototype.useProgram = function() {
 
-			programCount++;
+			contexts.get( this ).programCount++;
 			return useProgram.apply( this, arguments );
 
 		}
@@ -138,7 +141,7 @@ if( !window.__PerfMeterInstrumented ) {
 		var bindTexture = proto.prototype.bindTexture;
 		proto.prototype.bindTexture = function() {
 
-			if( arguments[ 0 ] !== null ) textureCount++;
+			if( arguments[ 0 ] !== null ) contexts.get( this ).textureCount++;
 
 			return bindTexture.apply( this, arguments );
 
@@ -155,7 +158,7 @@ if( !window.__PerfMeterInstrumented ) {
 								time = getTime();
 							},
 							function() {
-								JavaScriptWebGLTime += getTime() - time;
+								contexts.get( this ).JavaScriptTime += getTime() - time;
 							}
 							);
 					})( j );
@@ -168,6 +171,7 @@ if( !window.__PerfMeterInstrumented ) {
 
 	}
 
+	instrumentContext( CanvasRenderingContext2D );
 	instrumentContext( WebGLRenderingContext );
 	if( WebGL2Available ) instrumentContext( WebGL2RenderingContext );
 
@@ -176,7 +180,7 @@ if( !window.__PerfMeterInstrumented ) {
 		var drawElements2 = WebGL2RenderingContext.prototype.drawElements;
 		WebGL2RenderingContext.prototype.drawElements = function() {
 
-			drawCount ++;
+			contexts.get( this ).drawCount ++;
 			return drawElements2.apply( this, arguments );
 
 		}
@@ -184,7 +188,7 @@ if( !window.__PerfMeterInstrumented ) {
 		var drawArrays2 = WebGL2RenderingContext.prototype.drawArrays;
 		WebGL2RenderingContext.prototype.drawArrays = function() {
 
-			drawCount ++;
+			contexts.get( this ).drawCount ++;
 			return drawArrays2.apply( this, arguments );
 
 		}
@@ -200,16 +204,17 @@ if( !window.__PerfMeterInstrumented ) {
 
 		log( 'Extension', arguments[ 0 ] );
 		var res = getExtension.apply( this, arguments );
+		var gl = this;
 
 		if( arguments[ 0 ] === 'ANGLE_instanced_arrays' ){
 			var drawArraysInstancedANGLE = res.drawArraysInstancedANGLE;
 			res.drawArraysInstancedANGLE = function() {
-				instancedDrawCount++;
+				contexts.get( gl ).instancedDrawCount++;
 				return drawArraysInstancedANGLE.apply( this, arguments );
 			}
 			var drawElementsInstancedANGLE = res.drawElementsInstancedANGLE;
 			res.drawElementsInstancedANGLE = function() {
-				instancedDrawCount++;
+				contexts.get( gl ).instancedDrawCount++;
 				return drawElementsInstancedANGLE.apply( this, arguments );
 			}
 		}
@@ -225,7 +230,7 @@ if( !window.__PerfMeterInstrumented ) {
 		var drawElementsInstanced = WebGL2RenderingContext.prototype.drawElementsInstanced;
 		WebGL2RenderingContext.prototype.drawElementsInstanced = function() {
 
-			instancedDrawCount ++;
+			contexts.get( this ).instancedDrawCount ++;
 			return drawElementsInstanced.apply( this, arguments );
 
 		}
@@ -233,7 +238,7 @@ if( !window.__PerfMeterInstrumented ) {
 		var drawArraysInstanced = WebGL2RenderingContext.prototype.drawArraysInstanced;
 		WebGL2RenderingContext.prototype.drawArraysInstanced = function() {
 
-			instancedDrawCount ++;
+			contexts.get( this ).instancedDrawCount ++;
 			return drawArraysInstanced.apply( this, arguments );
 
 		}
@@ -271,7 +276,6 @@ if( !window.__PerfMeterInstrumented ) {
 	var framerate = 0;
 	var JavaScriptTime = 0;
 	var disjointFrames = {};
-	var disjointTime = 0;
 	var frameTime = 0;
 
 	window.requestAnimationFrame = function( c ) {
@@ -282,10 +286,10 @@ if( !window.__PerfMeterInstrumented ) {
 
 	function process( timestamp ) {
 
+		originalRAF( process );
+
 		//rAFValues.push( getTime() - oTime );
 		oTime = getTime();
-
-		originalRAF( process );
 
 		disjointFrames[ frameId ] = { time: 0, queries: 0 };
 		disjointTime = 0;
@@ -293,35 +297,39 @@ if( !window.__PerfMeterInstrumented ) {
 		contexts.forEach( function( context, id ) {
 
 			var queryExt = context.queryExt,
-			gl = context.gl;
+			gl = context.ctx;
 
-			context.queries.forEach( function( q, i ) {
-				var query = q.query;
-				var available = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_AVAILABLE_EXT );
-				var disjoint = gl.getParameter( queryExt.GPU_DISJOINT_EXT );
-				if( available && !disjoint ) {
-					var timeElapsed = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_EXT );
-					context.queries.splice( i, 1 );
-					disjointFrames[ q.frameId ].time += timeElapsed;
-					disjointFrames[ q.frameId ].queries--;
-					if( disjointFrames[ q.frameId ].queries === 0 ) {
-						//extValues.push( disjointFrames[ q.frameId ].time );
-						disjointTime += disjointFrames[ q.frameId ].time;
-						disjointFrames[ q.frameId ] = null;
+			if( queryExt ) {
+
+				context.queries.forEach( function( q, i ) {
+					var query = q.query;
+					var available = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_AVAILABLE_EXT );
+					var disjoint = gl.getParameter( queryExt.GPU_DISJOINT_EXT );
+					if( available && !disjoint ) {
+						var timeElapsed = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_EXT );
+						context.queries.splice( i, 1 );
+						disjointFrames[ q.frameId ].time += timeElapsed;
+						disjointFrames[ q.frameId ].queries--;
+						if( disjointFrames[ q.frameId ].queries === 0 ) {
+							//extValues.push( disjointFrames[ q.frameId ].time );
+							context.disjointTime += disjointFrames[ q.frameId ].time;
+							disjointFrames[ q.frameId ] = null;
+						}
 					}
-				}
-			} )
+				} )
 
-			var query = queryExt.createQueryEXT();
-			queryExt.beginQueryEXT( queryExt.TIME_ELAPSED_EXT, query );
-			context.queries.push( { frameId: frameId, query: query } );
-			disjointFrames[ frameId ].queries++;
+				var query = queryExt.createQueryEXT();
+				queryExt.beginQueryEXT( queryExt.TIME_ELAPSED_EXT, query );
+				context.queries.push( { frameId: frameId, query: query } );
+				disjointFrames[ frameId ].queries++;
+
+			}
 
 			//console.log( context.queries.length );
 
 		} );
 
-		JavaScriptWebGLTime = 0;
+		JavaScriptTime = 0;
 		var s = getTime();
 		rAFs.forEach( function( c, i ) {
 			c( timestamp );
@@ -331,7 +339,9 @@ if( !window.__PerfMeterInstrumented ) {
 
 		contexts.forEach( function( context ) {
 			var queryExt = context.queryExt;
-			queryExt.endQueryEXT( queryExt.TIME_ELAPSED_EXT );
+			if( queryExt ) {
+				queryExt.endQueryEXT( queryExt.TIME_ELAPSED_EXT );
+			}
 		} );
 
 		frames++;
@@ -355,10 +365,14 @@ if( !window.__PerfMeterInstrumented ) {
 
 		update();
 
-		programCount = 0;
-		drawCount = 0;
-		instancedDrawCount = 0;
-		textureCount = 0;
+		contexts.forEach( function( context ) {
+			context.programCount = 0;
+			context.drawCount = 0;
+			context.instancedDrawCount = 0;
+			context.textureCount = 0;
+			context.JavaScriptTime = 0;
+			context.disjointTime = 0;
+		} );
 
 	}
 
@@ -366,19 +380,39 @@ if( !window.__PerfMeterInstrumented ) {
 
 	function update(){
 
-		if( canvasCount === 0 ) return;
+		if( contexts.size === 0 ) return;
 
-		var totalDrawCount = drawCount + instancedDrawCount
+		var drawCount = 0;
+		var instancedDrawCount = 0;
+		var JavaScriptTime = 0;
+		var disjointTime = 0;
+		var programCount = 0;
+		var textureCount = 0;
+
+		contexts.forEach( function( context ) {
+			drawCount += context.drawCount;
+			instancedDrawCount += context.instancedDrawCount;
+			JavaScriptTime += context.JavaScriptTime;
+			disjointTime += context.disjointTime;
+			programCount += context.programCount;
+			textureCount += context.textureCount;
+		} );
+
+		var totalDrawCount = drawCount + instancedDrawCount;
+
 		text.innerHTML = `FPS: ${framerate.toFixed( 2 )}
 Frame Time: ${frameTime.toFixed(2)}
 JS Time: ${JavaScriptTime.toFixed( 2 )}
-WebGL JS time: ${JavaScriptWebGLTime.toFixed( 2 )}
+Canvas: ${contexts.size}
+Canvas JS time: ${JavaScriptTime.toFixed( 2 )}
+<b>WebGL</b>
 GPU Time: ${( disjointTime / 1000000 ).toFixed( 2 )}
 Programs: ${programCount}
 Textures: ${textureCount}
 Draw: ${drawCount}
 Instanced: ${instancedDrawCount}
 Total: ${totalDrawCount}
+<b>Browser</b>
 Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}
 GL Version: ${glVersion}
 GLSL Version: ${glslVersion}
