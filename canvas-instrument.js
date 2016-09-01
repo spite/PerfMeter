@@ -314,6 +314,7 @@ if( !window.__PerfMeterInstrumented ) {
 							//extValues.push( disjointFrames[ q.frameId ].time );
 							context.disjointTime += disjointFrames[ q.frameId ].time;
 							disjointFrames[ q.frameId ] = null;
+							delete disjointFrames[ q.frameId ];
 						}
 					}
 				} )
