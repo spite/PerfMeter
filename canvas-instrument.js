@@ -18,6 +18,39 @@ if( !window.__PerfMeterInstrumented ) {
 
 	log( 'Canvas Instrumentation', document.location.href, settings );
 
+	var glInfo = {
+		versions: [],
+		WebGLAvailable: 'WebGLRenderingContext' in window,
+		WebGL2Available: 'WebGL2RenderingContext' in window
+	};
+
+	function getGLInfo( context ) {
+		var gl = document.createElement( 'canvas' ).getContext( context );
+		if( !gl ) return;
+		var debugInfo = gl.getExtension( 'WEBGL_debug_renderer_info' );
+		var version = {
+			type: context,
+			vendor: gl.getParameter( debugInfo.UNMASKED_VENDOR_WEBGL ),
+			renderer: gl.getParameter( debugInfo.UNMASKED_RENDERER_WEBGL ),
+			glVersion: gl.getParameter( gl.VERSION ),
+			glslVersion: gl.getParameter( gl.SHADING_LANGUAGE_VERSION )
+		}
+		glInfo.versions.push( version );
+	}
+
+	getGLInfo( 'webgl' );
+	getGLInfo( 'webgl2' );
+
+	var webGLInfo = '';
+	glInfo.versions.forEach( v => {
+		var glInfo = `GL Version: ${v.glVersion}
+GLSL Version: ${v.glslVersion}
+Vendor: ${v.vendor}
+Renderer: ${v.renderer}
+`;
+		webGLInfo += glInfo;
+	} )
+
 	function post( msg ) {
 
 		msg.source = 'perfmeter-script';
@@ -57,14 +90,6 @@ if( !window.__PerfMeterInstrumented ) {
 		};
 	}
 
-	var WebGLAvailable = 'WebGLRenderingContext' in window;
-	var WebGL2Available = 'WebGL2RenderingContext' in window;
-
-	var vendor = '';
-	var renderer = '';
-	var glVersion = '';
-	var glslVersion = '';
-
 	var contexts = new Map();
 
 	HTMLCanvasElement.prototype.getContext = _h( HTMLCanvasElement.prototype.getContext,
@@ -76,9 +101,11 @@ if( !window.__PerfMeterInstrumented ) {
 		},
 		function( res, args ) {
 
+			if( !res ) return;
+
 			var ctx = {
 				ctx: res,
-				type: args[ 0 ],
+				type: '2d',
 				queryExt: null,
 				queries: [],
 				frames: {},
@@ -97,11 +124,7 @@ if( !window.__PerfMeterInstrumented ) {
 
 			if( args[ 0 ] === 'webgl' || args[ 0 ] === 'experimental-webgl' || args[ 0 ] === 'webgl2' ) {
 
-				var debugInfo = res.getExtension( 'WEBGL_debug_renderer_info' );
-				vendor = res.getParameter( debugInfo.UNMASKED_VENDOR_WEBGL );
-				renderer = res.getParameter( debugInfo.UNMASKED_RENDERER_WEBGL );
-				glVersion = res.getParameter( res.VERSION );
-				glslVersion = res.getParameter( res.SHADING_LANGUAGE_VERSION );
+				ctx.type = '3d';
 
 				var queryExt = res.getExtension( 'EXT_disjoint_timer_query' );
 				if( queryExt ) {
@@ -173,9 +196,9 @@ if( !window.__PerfMeterInstrumented ) {
 
 	instrumentContext( CanvasRenderingContext2D );
 	instrumentContext( WebGLRenderingContext );
-	if( WebGL2Available ) instrumentContext( WebGL2RenderingContext );
+	if( glInfo.WebGL2Available ) instrumentContext( WebGL2RenderingContext );
 
-	if( WebGL2Available ) {
+	if( glInfo.WebGL2Available ) {
 
 		var drawElements2 = WebGL2RenderingContext.prototype.drawElements;
 		WebGL2RenderingContext.prototype.drawElements = function() {
@@ -225,7 +248,7 @@ if( !window.__PerfMeterInstrumented ) {
 
 	// WebGL2
 
-	if( WebGL2Available ) {
+	if( glInfo.WebGL2Available ) {
 
 		var drawElementsInstanced = WebGL2RenderingContext.prototype.drawElementsInstanced;
 		WebGL2RenderingContext.prototype.drawElementsInstanced = function() {
@@ -391,6 +414,7 @@ if( !window.__PerfMeterInstrumented ) {
 		var disjointTime = 0;
 		var programCount = 0;
 		var textureCount = 0;
+		var hasWebGL = false;
 
 		contexts.forEach( function( context ) {
 			drawCount += context.drawCount;
@@ -399,28 +423,31 @@ if( !window.__PerfMeterInstrumented ) {
 			disjointTime += context.disjointTime;
 			programCount += context.programCount;
 			textureCount += context.textureCount;
+			if( context.type === '3d' ) hasWebGL = true;
 		} );
 
 		var totalDrawCount = drawCount + instancedDrawCount;
 
-		text.innerHTML = `FPS: ${framerate.toFixed( 2 )}
-Frame Time: ${frameTime.toFixed(2)}
-JS Time: ${JavaScriptTime.toFixed( 2 )}
+		var general = `FPS: ${framerate.toFixed( 2 )}
+Frame JS Time: ${frameTime.toFixed(2)}
 Canvas: ${contexts.size}
 Canvas JS time: ${JavaScriptTime.toFixed( 2 )}
-<b>WebGL</b>
+`
+
+		var webgl = `<b>WebGL</b>
 GPU Time: ${( disjointTime / 1000000 ).toFixed( 2 )}
 Programs: ${programCount}
 Textures: ${textureCount}
 Draw: ${drawCount}
 Instanced: ${instancedDrawCount}
 Total: ${totalDrawCount}
-<b>Browser</b>
+`
+
+		var browser = `<b>Browser</b>
 Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}
-GL Version: ${glVersion}
-GLSL Version: ${glslVersion}
-Vendor: ${vendor}
-Renderer: ${renderer}`;
+`;
+
+		text.innerHTML = general + ( hasWebGL ? webgl : '' ) + browser + webGLInfo;
 
 	}
 
