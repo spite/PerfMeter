@@ -6,6 +6,7 @@ var script = '';
 
 var defaultSettings = {
 
+	logOperations: false,
 	autoinstrument: true
 
 }

@@ -229,7 +229,7 @@ Renderer: ${v.renderer}
 								time = getTime();
 							},
 							function() {
-								contexts.get( this ).log.push( j );
+								if( settings.logOperations ) contexts.get( this ).log.push( j );
 								contexts.get( this ).JavaScriptTime += getTime() - time;
 							}
 							);
