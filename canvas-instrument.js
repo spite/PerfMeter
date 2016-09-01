@@ -141,7 +141,11 @@ Renderer: ${v.renderer}
 				ctx.points += count;
 				break;
 			case gl.LINE_STRIP:
+				ctx.lines += count - 1;
+				break;
 			case gl.LINE_LOOP:
+				ctx.lines += count;
+				break;
 			case gl.LINES:
 				ctx.lines += count / 2;
 				break;
