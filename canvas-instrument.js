@@ -64,7 +64,7 @@ if( !window.__PerfMeterInstrumented ) {
 	var vendor = '';
 	var renderer = '';
 	var glVersion = '';
-	var glslVerion = '';
+	var glslVersion = '';
 
 	HTMLCanvasElement.prototype.getContext = _h( HTMLCanvasElement.prototype.getContext,
 		function() {
