@@ -277,6 +277,7 @@ if( !window.__PerfMeterInstrumented ) {
 	var JavaScriptTime = 0;
 	var disjointFrames = {};
 	var frameTime = 0;
+	var rAFCount = 0;
 
 	window.requestAnimationFrame = function( c ) {
 
@@ -288,6 +289,7 @@ if( !window.__PerfMeterInstrumented ) {
 
 		originalRAF( process );
 
+		rAFCount = rAFs.length
 		//rAFValues.push( getTime() - oTime );
 		oTime = getTime();
 
