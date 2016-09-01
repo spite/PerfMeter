@@ -5,9 +5,17 @@
 	src: url('./Roboto_Mono/RobotoMono-Regular.ttf') format('truetype');
 }
 
+@font-face {
+	font-family: 'Roboto Mono';
+	font-style: normal;
+	font-weight: 700;
+	src: url('./Roboto_Mono/RobotoMono-Bold.ttf') format('truetype');
+}
+
 #perfmeter-panel{
+	all: unset;
+	text-align: right;
 	pointer-events: none;
-	all: initial;
 	font-family: "Roboto mono";
 	font-size: 10px;
 	position: fixed;
@@ -19,4 +27,9 @@
 	text-shadow: 0 -1px 0 #000;
 	z-index: 2147483647;
 	white-space: pre;
+}
+
+#perfmeter-panel b{
+	font-weight: 700;
+	color: #9EFD38;
 }
