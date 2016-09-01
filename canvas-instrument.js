@@ -269,9 +269,16 @@ Renderer: ${v.renderer}
 		fileref.rel = "stylesheet";
 		fileref.type = "text/css";
 		fileref.href = settings.cssPath;
+
 		window.document.getElementsByTagName("head")[0].appendChild(fileref)
 
-		window.document.body.appendChild( text );
+		if( !window.document.body ) {
+			window.addEventListener( 'load', function() {
+				window.document.body.appendChild( text );
+			} );
+		} else {
+			window.document.body.appendChild( text );
+		}
 
 		instrumentContext( CanvasRenderingContext2D );
 		instrumentContext( WebGLRenderingContext );
