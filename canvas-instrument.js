@@ -225,6 +225,14 @@ Renderer: ${v.renderer}
 
 		}
 
+		var deleteTexture = proto.prototype.deleteTexture;
+		proto.prototype.deleteTexture = function() {
+
+			contexts.get( this ).textureCount--;
+			return deleteTexture.apply( this, arguments );
+
+		}
+
 		for( var j in proto.prototype ) {
 			try {
 				if( typeof proto.prototype[ j ] === 'function' ){
