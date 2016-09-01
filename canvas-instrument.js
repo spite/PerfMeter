@@ -18,6 +18,8 @@ if( !window.__PerfMeterInstrumented ) {
 
 	log( 'Canvas Instrumentation', document.location.href, settings );
 
+	var instrumented = false;
+
 	var glInfo = {
 		versions: [],
 		WebGLAvailable: 'WebGLRenderingContext' in window,
@@ -69,18 +71,6 @@ Renderer: ${v.renderer}
 	var text = document.createElement( 'div' );
 	text.setAttribute( 'id', 'perfmeter-panel' );
 
-	window.addEventListener( 'load', _ => {
-
-		var fileref = document.createElement("link");
-		fileref.rel = "stylesheet";
-		fileref.type = "text/css";
-		fileref.href = settings.cssPath;
-		window.document.getElementsByTagName("head")[0].appendChild(fileref)
-
-		window.document.body.appendChild( text );
-
-	} );
-
 	function _h ( f, pre, post ) {
 		return function () {
 			var args = pre.apply( this, arguments ) || arguments;
@@ -109,14 +99,17 @@ Renderer: ${v.renderer}
 				queryExt: null,
 				queries: [],
 				frames: {},
+				programCount: 0,
+				textureCount: 0,
+				frameBufferCount: 0,
 				disjointTime: 0,
 				drawCount: 0,
 				instancedDrawCount: 0,
 				pointCount: 0,
 				lineCount: 0,
 				triangleCount: 0,
-				programCount: 0,
-				textureCount: 0,
+				useProgramCount: 0,
+				bindTextureCount: 0,
 				JavaScriptTime: 0,
 				points: 0,
 				lines: 0,
@@ -135,6 +128,8 @@ Renderer: ${v.renderer}
 					ctx.queryExt = queryExt;
 				}
 			}
+
+			instrumentCanvas();
 
 		}
 	);
@@ -192,7 +187,7 @@ Renderer: ${v.renderer}
 		var useProgram = proto.prototype.useProgram;
 		proto.prototype.useProgram = function() {
 
-			contexts.get( this ).programCount++;
+			contexts.get( this ).useProgramCount++;
 			return useProgram.apply( this, arguments );
 
 		}
@@ -256,9 +251,27 @@ Renderer: ${v.renderer}
 
 	}
 
-	instrumentContext( CanvasRenderingContext2D );
-	instrumentContext( WebGLRenderingContext );
-	if( glInfo.WebGL2Available ) instrumentContext( WebGL2RenderingContext );
+	function instrumentCanvas() {
+
+		if( instrumented ) return;
+
+		instrumented = true;
+
+		var fileref = document.createElement("link");
+		fileref.rel = "stylesheet";
+		fileref.type = "text/css";
+		fileref.href = settings.cssPath;
+		window.document.getElementsByTagName("head")[0].appendChild(fileref)
+
+		window.document.body.appendChild( text );
+
+		instrumentContext( CanvasRenderingContext2D );
+		instrumentContext( WebGLRenderingContext );
+		if( glInfo.WebGL2Available ) instrumentContext( WebGL2RenderingContext );
+
+		originalRAF( process );
+
+	}
 
 	// WebGL with ANGLE_instanced_arrays Extension
 	// There isn't an available ANGLEInstancedArrays constructor
@@ -461,8 +474,6 @@ Renderer: ${v.renderer}
 		} );
 
 	}
-
-	originalRAF( process );
 
 	function update(){
 
