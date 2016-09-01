@@ -200,9 +200,33 @@ Renderer: ${v.renderer}
 		var bindTexture = proto.prototype.bindTexture;
 		proto.prototype.bindTexture = function() {
 
-			if( arguments[ 0 ] !== null ) contexts.get( this ).textureCount++;
+			if( arguments[ 0 ] !== null ) contexts.get( this ).bindTextureCount++;
 
 			return bindTexture.apply( this, arguments );
+
+		}
+
+		var createProgram = proto.prototype.createProgram;
+		proto.prototype.createProgram = function() {
+
+			contexts.get( this ).programCount++;
+			return createProgram.apply( this, arguments );
+
+		}
+
+		var deleteProgram = proto.prototype.deleteProgram;
+		proto.prototype.deleteProgram = function() {
+
+			contexts.get( this ).programCount--;
+			return deleteProgram.apply( this, arguments );
+
+		}
+
+		var createTexture = proto.prototype.createTexture;
+		proto.prototype.createTexture = function() {
+
+			contexts.get( this ).textureCount++;
+			return createTexture.apply( this, arguments );
 
 		}
 
@@ -412,7 +436,7 @@ Renderer: ${v.renderer}
 
 		frameId++;
 
-		/*if( programCount === 0 ) {
+		/*if( useProgramCount === 0 ) {
 			contexts.forEach( gl => {
 				var res = gl.getParameter( gl.CURRENT_PROGRAM );
 				debugger;
@@ -424,10 +448,10 @@ Renderer: ${v.renderer}
 		update();
 
 		contexts.forEach( function( context ) {
-			context.programCount = 0;
+			context.useProgramCount = 0;
 			context.drawCount = 0;
 			context.instancedDrawCount = 0;
-			context.textureCount = 0;
+			context.bindTextureCount = 0;
 			context.JavaScriptTime = 0;
 			context.disjointTime = 0;
 			context.points = 0;
@@ -448,23 +472,27 @@ Renderer: ${v.renderer}
 		var instancedDrawCount = 0;
 		var JavaScriptTime = 0;
 		var disjointTime = 0;
-		var programCount = 0;
-		var textureCount = 0;
+		var useProgramCount = 0;
+		var bindTextureCount = 0;
 		var hasWebGL = false;
 		var totalPoints = 0;
 		var totalLines = 0;
 		var totalTriangles = 0;
+		var programCount = 0;
+		var textureCount = 0;
 
 		contexts.forEach( function( context ) {
 			drawCount += context.drawCount;
 			instancedDrawCount += context.instancedDrawCount;
 			JavaScriptTime += context.JavaScriptTime;
 			disjointTime += context.disjointTime;
-			programCount += context.programCount;
-			textureCount += context.textureCount;
+			useProgramCount += context.useProgramCount;
+			bindTextureCount += context.bindTextureCount;
 			totalPoints += context.points;
 			totalLines += context.lines;
 			totalTriangles += context.triangles;
+			programCount += context.programCount;
+			textureCount += context.textureCount;
 			if( context.type === '3d' ) hasWebGL = true;
 		} );
 
@@ -478,8 +506,10 @@ Canvas JS time: ${JavaScriptTime.toFixed( 2 )}
 
 		var webgl = `<b>WebGL</b>
 GPU Time: ${( disjointTime / 1000000 ).toFixed( 2 )}
-Programs: ${programCount}
-Textures: ${textureCount}
+programs: ${programCount}
+textures: ${textureCount}
+useProgram: ${useProgramCount}
+bindTexture: ${bindTextureCount}
 Draw: ${drawCount}
 Instanced: ${instancedDrawCount}
 Total: ${totalDrawCount}
