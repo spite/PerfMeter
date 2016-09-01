@@ -84,7 +84,7 @@ Renderer: ${v.renderer}
 
 	HTMLCanvasElement.prototype.getContext = _h( HTMLCanvasElement.prototype.getContext,
 		function() {
-			this.style.border = '1px solid #ff00ff';
+			this.style.border = '1px solid #9EFD38';
 			this.style.boxSizing = 'border-box';
 
 			log( 'getContext', arguments );

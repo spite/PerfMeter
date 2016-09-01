@@ -30,6 +30,7 @@
 }
 
 #perfmeter-panel b{
+	font: inherit;
 	font-weight: 700;
 	color: #9EFD38;
 }
