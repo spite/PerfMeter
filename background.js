@@ -173,17 +173,3 @@ chrome.tabs.onUpdated.addListener( function( tabId, info, tab ) {
 		log( 'finished reload' );
 	}
 })
-
-chrome.runtime.onConnectExternal.addListener(function(port) {
-	log( 'EXTERNAL', port )
-	port.onMessage.addListener(function(msg) {
-		// See other examples for sample onMessage handlers.
-	});
-});
-
-chrome.runtime.onMessageExternal.addListener(
-	function(request, sender, sendResponse) {
-		log( 'EXTERNAL', request )
-	}
-);
-
