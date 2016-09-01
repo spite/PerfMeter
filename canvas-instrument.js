@@ -33,6 +33,7 @@ if( !window.__PerfMeterInstrumented ) {
 
 	var text = document.createElement( 'div' );
 	text.setAttribute( 'id', 'perfmeter-panel' );
+	text.style.pointerEvents = 'none' // doesn't work from the .css ???
 
 	window.addEventListener( 'load', _ => {
 
