@@ -8,11 +8,13 @@ if( !window.__PerfMeterInstrumented ) {
 
 	function log() {
 
-		var args = Array.from( arguments );
-		args.unshift( 'background: #1E9433; color: #ffffff; text-shadow: 0 -1px #000; padding: 4px 0 4px 0; line-height: 0' );
-		args.unshift( `%c PerfMeter ` );
-
-		console.log.apply( console, args );
+		console.log.apply(
+			console, [
+				`%c PerfMeter `,
+				'background: #1E9433; color: #ffffff; text-shadow: 0 -1px #000; padding: 4px 0 4px 0; line-height: 0',
+				...arguments
+			]
+		);
 
 	}
 
