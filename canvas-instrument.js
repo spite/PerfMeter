@@ -98,6 +98,12 @@ Renderer: ${v.renderer}
 
 	window.__PerfMeterQueryMessageQueue = queryMessageQueue;
 
+	window.__PerfMeterHasContentScript = function() {
+
+		return window.__PerfMeterContentScript === undefined ? false : true;
+
+	}
+
 	function post( msg ) {
 
 		window.__PerfMeterContentScript ? postWithContentScript( msg ) : postWithoutContentScript( msg )

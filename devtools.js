@@ -54,6 +54,22 @@ function poll() {
 
 }
 
+function hasContentScript() {
+
+	return new Promise( ( resolve, reject ) => {
+
+		chrome.devtools.inspectedWindow.eval(
+			'window.__PerfMeterHasContentScript()',
+			( result, isException ) => {
+				if( result === true ) resolve();
+				else reject();
+			}
+		);
+
+	} );
+
+}
+
 port.onMessage.addListener( msg =>  {
 
 	switch( msg.action ) {
@@ -90,6 +106,15 @@ port.onMessage.addListener( msg =>  {
 
 } );
 
+function startRecording() {
+
+	chrome.devtools.inspectedWindow.eval(
+		`window.__PerfMeterStartRecording();`,
+		( result, isException ) => log( result, isException )
+	);
+
+}
+
 function initialize( panel ) {
 
 	panel.onShown.addListener( wnd => {
@@ -123,11 +148,12 @@ function initialize( panel ) {
 		panelWindow.startRecordingData = function() {
 			log( 'Start Recording...' );
 			recordBuffer = [];
-			pollingInterval = setInterval( poll, 100 );
-			chrome.devtools.inspectedWindow.eval(
-				`window.__PerfMeterStartRecording();`,
-				( result, isException ) => log( result, isException )
-			);
+			hasContentScript().then( _ => {
+				startRecording();
+			} ).catch( _ => {
+				pollingInterval = setInterval( poll, 100 );
+				startRecording();
+			} );
 		}
 
 		panelWindow.stopRecordingData = function() {
