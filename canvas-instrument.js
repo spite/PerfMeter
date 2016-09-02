@@ -73,10 +73,34 @@ Renderer: ${v.renderer}
 		webGLInfo += glInfo;
 	} )
 
-	function post( msg ) {
+	function postWithContentScript( msg ) {
 
 		msg.source = 'perfmeter-script';
 		window.postMessage( msg, '*' );
+
+	}
+
+	var messageQueue = [];
+	function postWithoutContentScript( msg ) {
+
+		msg.source = 'perfmeter-script';
+		messageQueue.push( msg );
+
+	}
+
+	function queryMessageQueue() {
+
+		var res = messageQueue.slice();
+		messageQueue = [];
+		return res;
+
+	}
+
+	window.__PerfMeterQueryMessageQueue = queryMessageQueue;
+
+	function post( msg ) {
+
+		window.__PerfMeterContentScript ? postWithContentScript( msg ) : postWithoutContentScript( msg )
 
 	}
 

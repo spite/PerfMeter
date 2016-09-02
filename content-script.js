@@ -40,3 +40,12 @@ window.addEventListener( 'message', function(event) {
 	port.postMessage( message );
 
 });
+
+var source = '(' + function () {
+	window.__PerfMeterContentScript = true;
+} + ')();';
+
+var script = document.createElement('script');
+script.textContent = source;
+(document.head||document.documentElement).appendChild(script);
+script.parentNode.removeChild(script);

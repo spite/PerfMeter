@@ -37,7 +37,22 @@ var settings = {};
 var panelWindow = null;
 var scriptStatus = 0;
 
-var recordBuffer;
+var recordBuffer = [];
+var pollingInterval = null;
+
+function poll() {
+
+	chrome.devtools.inspectedWindow.eval(
+		'window.__PerfMeterQueryMessageQueue()',
+		( result, isException ) => {
+			if( result ) {
+				log( 'Data', result.length )
+				recordBuffer = recordBuffer.concat( ...result );
+			}
+		}
+	);
+
+}
 
 port.onMessage.addListener( msg =>  {
 
@@ -108,6 +123,7 @@ function initialize( panel ) {
 		panelWindow.startRecordingData = function() {
 			log( 'Start Recording...' );
 			recordBuffer = [];
+			pollingInterval = setInterval( poll, 100 );
 			chrome.devtools.inspectedWindow.eval(
 				`window.__PerfMeterStartRecording();`,
 				( result, isException ) => log( result, isException )
@@ -115,6 +131,7 @@ function initialize( panel ) {
 		}
 
 		panelWindow.stopRecordingData = function() {
+			pollingInterval = clearInterval( pollingInterval );
 			log( `Recording stopped, ${recordBuffer.length} samples taken` );
 			chrome.devtools.inspectedWindow.eval(
 				`window.__PerfMeterStopRecording();`,
