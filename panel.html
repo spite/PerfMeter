@@ -13,8 +13,16 @@
 	<p id="not-instrumented" class="instrument-status">Tab not instrumented.</p>-->
 	<button id="reload-button" >Reload</button>
 </div>
+<h2>Time Series</h2>
+<button id="record-data" >Record</button>
 <h2>Settings</h2>
 <form>
+	<h3>Monitoring</h3>
+	<p><input type="checkbox" id="log-calls" /> <label for="log-calls" >Log calls</label></p>
+	<h3>Reporting</h3>
+	<p><input type="checkbox" id="aggregate-canvas" /> <label for="aggregate-canvas" >Aggregate results per canvas type</label></p>
+	<p><input type="checkbox" id="aggregate-calls" /> <label for="aggregate-calls" >Aggregate calls per type</label></p>
+	<h3>Extension</h3>
 	<p><input type="checkbox" id="autoinstrument" /> <label for="autoinstrument" >Auto-instrument (will automatically be injected with DevTools open)</label></p>
 </form>
 <script src="panel.js"></script>
