@@ -1,6 +1,6 @@
 *{ margin: 0; padding: 0; box-sizing: border-box; }
-body{ padding: 10px; }
+body{ padding: 10px; line-height: 2em;}
 h1{ font-size: 14px; }
 .instrument-status{ display: none; }
 #scriptStatus{ background-color: #FFDA9E; padding: 10px; margin: 10px 0; }
-#reload-button{ padding: 4px; cursor: pointer; }
+button{ padding: 4px; cursor: pointer; }
