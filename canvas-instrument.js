@@ -445,9 +445,10 @@ Renderer: ${v.renderer}
 
 		JavaScriptTime = 0;
 		var s = getTime();
-		rAFs.forEach( function( c, i ) {
+		var rAFQueue = rAFs.slice();
+		rAFs = [];
+		rAFQueue.forEach( function( c, i ) {
 			c( timestamp );
-			rAFs.splice( i, 1 );
 		} );
 		JavaScriptTime = getTime() - s;
 
