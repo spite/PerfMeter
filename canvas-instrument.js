@@ -381,7 +381,7 @@ Renderer: ${v.renderer}
 	var originalRAF = requestAnimationFrame;
 	var rAFs = [];
 	var oTime = getTime();
-	var frames = 0;
+	var frameCount = 0;
 	var lastTime = getTime();
 	var startTime = getTime();
 	var frameId = 0;
@@ -461,11 +461,11 @@ Renderer: ${v.renderer}
 			}
 		} );
 
-		frames++;
+		frameCount++;
 		if( getTime() > lastTime + 1000 ) {
-			framerate = frames * 1000 / ( getTime() - lastTime );
-			//frameValues.push( frames * 1000 / ( getTime() - lastTime ) );
-			frames = 0;
+			framerate = frameCount * 1000 / ( getTime() - lastTime );
+			//frameValues.push( frameCount * 1000 / ( getTime() - lastTime ) );
+			frameCount = 0;
 			lastTime = getTime();
 		}
 
