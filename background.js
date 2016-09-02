@@ -6,7 +6,8 @@ var script = '';
 
 var defaultSettings = {
 
-	logOperations: false,
+	showGPUInfo: false,
+	logOperations: !false,
 	autoinstrument: true
 
 }
