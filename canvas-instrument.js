@@ -392,7 +392,7 @@ Renderer: ${v.renderer}
 
 	window.requestAnimationFrame = function( c ) {
 
-		rAFs.push( c );
+		if( typeof c === 'function' ) rAFs.push( c ); // some pages pass null (?)
 
 	}
 
