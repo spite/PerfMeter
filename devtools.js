@@ -3,6 +3,21 @@ chrome.devtools.panels.create( 'PerfMeter', 'assets/icon.svg', 'panel.html', ini
 var port = chrome.runtime.connect( null, { name: `devtools` } );
 var tabId = chrome.devtools.inspectedWindow.tabId
 
+function log( ...args ) {
+
+	var strArgs = [
+		'"%c PerfMeter | DevTools "',
+		'"background: #1E9433; color: #ffffff; text-shadow: 0 -1px #000; padding: 4px 0 4px 0; line-height: 0;"',
+		...args.map( v => JSON.stringify( v ) )
+	];
+
+	chrome.devtools.inspectedWindow.eval(
+		`console.log(${strArgs});`,
+		( result, isException ) => console.log( result, isException )
+	);
+
+}
+
 function post( msg ) {
 
 	msg.tabId = tabId;
@@ -13,8 +28,8 @@ function post( msg ) {
 post( { action: 'start' } );
 post( { action: 'getScript' } );
 
-port.onDisconnect.addListener( function() {
-	console.log( 'disconnect' );
+port.onDisconnect.addListener( _ => {
+	log( 'Disconnect' );
 } );
 
 var script = '';
@@ -22,7 +37,7 @@ var settings = {};
 var panelWindow = null;
 var scriptStatus = 0;
 
-port.onMessage.addListener( function( msg ) {
+port.onMessage.addListener( msg =>  {
 
 	switch( msg.action ) {
 		case 'settings':
@@ -36,9 +51,10 @@ port.onMessage.addListener( function( msg ) {
 		break;
 		case 'inject':
 		scriptStatus = 2;
-		chrome.devtools.inspectedWindow.eval( `(function(){var settings=${JSON.stringify( settings )}; ${script};})();`, function(result, isException) {
-			console.log( result, isException )
-		} );
+		chrome.devtools.inspectedWindow.eval(
+			`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
+			( result, isException ) => log( result, isException )
+		);
 		break;
 		case 'fromScript':
 		if( panelWindow ) {
@@ -51,7 +67,7 @@ port.onMessage.addListener( function( msg ) {
 
 function initialize( panel ) {
 
-	panel.onShown.addListener( function ( wnd ) {
+	panel.onShown.addListener( wnd => {
 
 		panelWindow = wnd;
 
@@ -65,9 +81,10 @@ function initialize( panel ) {
 
 		panelWindow.inject = function() {
 			scriptStatus = 2;
-			chrome.devtools.inspectedWindow.eval( `(function(){var settings=${JSON.stringify( settings )}; ${script};})();`, function(result, isException) {
-				console.log( result, isException )
-			} );
+			chrome.devtools.inspectedWindow.eval(
+				`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
+				( result, isException ) => log( result, isException )
+			);
 		}
 		panelWindow.reload = function() {
 			scriptStatus = 1;
@@ -98,20 +115,3 @@ function initialize( panel ) {
 	});
 
 }
-
-// chrome.devtools.network.onRequestFinished
-// chrome.devtools.network.onNavigated
-// are called after page js execution
-
-chrome.runtime.onConnect.addListener( function( port ) {
-
-	alert( 'hey' );
-	console.log( ' DevTools >>> chrome.runtime.onConnect', JSON.stringify( port ) );
-
-	function listener( msg, sender, reply ) {
-		return true;
-	}
-
-	port.onMessage.addListener( listener );
-
-} );
