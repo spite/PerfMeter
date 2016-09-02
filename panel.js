@@ -13,11 +13,19 @@ document.getElementById( 'autoinstrument' ).addEventListener( 'change', e => {
 
 } );
 
+document.getElementById( 'show-gpuinfo' ).addEventListener( 'change', e => {
+
+	window.settings.showGPUInfo = e.target.checked;
+	updateSettings();
+
+} );
+
 function setSettings( settings ) {
 
 	window.settings = settings;
 
 	document.getElementById( 'autoinstrument' ).checked = settings.autoinstrument;
+	document.getElementById( 'show-gpuinfo' ).checked = settings.showGPUInfo;
 
 }
 
