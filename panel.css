@@ -4,7 +4,4 @@ h1{ font-size: 14px; }
 .instrument-status{ display: none; }
 #scriptStatus{ background-color: #FFDA9E; padding: 10px; margin: 10px 0; }
 button{ padding: 4px; cursor: pointer; }
-input[type=checkbox]:disabled+label {
-    opacity: .5;
-}
-
+input[type=checkbox]:disabled+label { opacity: .5; }

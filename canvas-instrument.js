@@ -10,6 +10,20 @@ if( !window.__PerfMeterInstrumented ) {
 		settings = s;
 	}
 
+	var recording = false;
+
+	window.__PerfMeterStartRecording = function() {
+
+		recording = true;
+
+	}
+
+	window.__PerfMeterStopRecording = function() {
+
+		recording = false;
+
+	}
+
 	function log() {
 
 		console.log.apply(
@@ -532,6 +546,20 @@ Renderer: ${v.renderer}
 			textureCount += context.textureCount;
 			if( context.type === '3d' ) hasWebGL = true;
 		} );
+
+		if( recording ) {
+
+			post( {
+				method: 'frame',
+				data: {
+					framerate: framerate,
+					frameTime: frameTime,
+					JavaScriptTime: JavaScriptTime,
+					disjointTime: disjointTime
+				}
+			} );
+
+		}
 
 		var totalDrawCount = drawCount + instancedDrawCount;
 

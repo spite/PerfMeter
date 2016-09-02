@@ -6,6 +6,22 @@ reloadButton.addEventListener( 'click', function( e ) {
 
 } );
 
+var startRecordDataButton = document.getElementById( 'start-record-data-button' );
+
+startRecordDataButton.addEventListener( 'click', function( e ) {
+
+	startRecordingData();
+
+} );
+
+var stopRecordDataButton = document.getElementById( 'stop-record-data-button' );
+
+stopRecordDataButton.addEventListener( 'click', function( e ) {
+
+	stopRecordingData();
+
+} );
+
 document.getElementById( 'autoinstrument' ).addEventListener( 'change', e => {
 
 	window.settings.autoinstrument = e.target.checked;

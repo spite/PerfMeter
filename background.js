@@ -83,7 +83,7 @@ chrome.runtime.onConnect.addListener( function( port ) {
 		connections[ tabId ][ name ] = port;
 
 		//log( sender );
-		log( 'port.onMessage', port.name, msg );
+		//log( 'port.onMessage', port.name, msg );
 
 		if( name === 'contentScript' ) {
 
@@ -169,7 +169,9 @@ chrome.webRequest.onBeforeRequest.addListener( function() {
 }, {urls: ["<all_urls>"]} );
 
 chrome.tabs.onUpdated.addListener( function( tabId, info, tab ) {
-	log( 'onUpdate', tabId, info, tab );
+
+	//log( 'onUpdate', tabId, info, tab );
+
 	if( info.status === 'complete' ) {
 		reloadTriggered = false;
 		log( 'finished reload' );
