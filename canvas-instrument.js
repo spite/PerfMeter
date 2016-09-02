@@ -6,6 +6,10 @@ if( !window.__PerfMeterInstrumented ) {
 
 	window.__PerfMeterInstrumented = true;
 
+	window.__PerfMeterSettings = function( s ) {
+		settings = s;
+	}
+
 	function log() {
 
 		console.log.apply(

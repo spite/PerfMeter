@@ -44,6 +44,10 @@ port.onMessage.addListener( msg =>  {
 		settings = msg.settings;
 		if( panelWindow && panelWindow.setSettings ) {
 			panelWindow.setSettings( settings );
+			chrome.devtools.inspectedWindow.eval(
+				`window.__PerfMeterSettings(${JSON.stringify( settings )});`,
+				( result, isException ) => log( result, isException )
+			);
 		}
 		break;
 		case 'script':
