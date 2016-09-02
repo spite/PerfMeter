@@ -555,7 +555,7 @@ Triangles: ${totalTriangles}
 Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}
 `;
 
-		text.innerHTML = general + ( hasWebGL ? webgl : '' ) + browser + webGLInfo;
+		text.innerHTML = general + ( hasWebGL ? webgl : '' ) + browser + ( settings.showGPUInfo ? webGLInfo : '' );
 
 	}
 
