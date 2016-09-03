@@ -40,14 +40,25 @@ var scriptStatus = 0;
 var recordBuffer = [];
 var pollingInterval = null;
 
+function processMessageFromScript( msg ) {
+
+	if( msg.method === 'frame' ) {
+		recordBuffer.push( msg.data );
+	} else {
+		if( panelWindow ) {
+			panelWindow.onScriptMessage( msg );
+		}
+	}
+
+}
+
 function poll() {
 
 	chrome.devtools.inspectedWindow.eval(
 		'window.__PerfMeterQueryMessageQueue()',
 		( result, isException ) => {
 			if( result ) {
-				log( 'Data', result.length )
-				recordBuffer = recordBuffer.concat( ...result );
+				result.forEach( msg => processMessageFromScript( msg ) );
 			}
 		}
 	);
@@ -94,13 +105,7 @@ port.onMessage.addListener( msg =>  {
 		);
 		break;
 		case 'fromScript':
-		if( msg.data.method === 'frame' ) {
-			recordBuffer.push( msg.data.data );
-		} else {
-			if( panelWindow ) {
-				panelWindow.onScriptMessage( msg.data );
-			}
-		}
+		processMessageFromScript( msg.data );
 		break;
 	}
 
@@ -158,7 +163,7 @@ function initialize( panel ) {
 
 		panelWindow.stopRecordingData = function() {
 			pollingInterval = clearInterval( pollingInterval );
-			log( `Recording stopped, ${recordBuffer.length} samples taken` );
+			log( `Recording stopped, ${recordBuffer.length} samples taken`, recordBuffer );
 			chrome.devtools.inspectedWindow.eval(
 				`window.__PerfMeterStopRecording();`,
 				( result, isException ) => log( result, isException )
