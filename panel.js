@@ -73,6 +73,37 @@ google.charts.load('current', {packages: ['corechart', 'line']});
 
 function plotRecording( recordBuffer ) {
 
+	var d = Date.now();
+
+	var pointsGPU = [];
+	var pointsFPS = [];
+	var pointsJS = [];
+
+	recordBuffer.forEach( rec => {
+		pointsFPS.push( { date: new Date( d + rec.timestamp ), value: rec.framerate } );
+		pointsGPU.push( { date: new Date( d + rec.timestamp ), value: rec.disjointTime / ( 1000 * 1000 ) } );
+		pointsJS.push( { date: new Date( d + rec.timestamp ), value: rec.JavaScriptTime / ( 1000 * 1000 ) } );
+	} );
+
+	MG.data_graphic({
+		title: "Downloads",
+		description: "This graphic shows a time-series of downloads.",
+		data: [ pointsFPS, pointsGPU, pointsJS ],
+		full_width: true,
+		animate_on_load: true,
+        area: false,
+        y_extended_ticks: true,
+		height: 250,
+		x_accessor: 'date',
+		x_rug: true,
+		target: '#chart_div',
+		legend: ['FPS','GPU','JS'],
+        legend_target: 'div#custom-color-key',
+        colors: ['blue', 'rgb(255,100,43)', '#CCCCFF'],
+        aggregate_rollover: true
+	})
+
+return;
 	var data = new google.visualization.DataTable();
 	data.addColumn('number', 'Timestamp');
 	data.addColumn('number', 'GPU (ms)');
@@ -90,7 +121,8 @@ function plotRecording( recordBuffer ) {
 		vAxis: {
 			title: 'Time | FPS'
 		},
-		colors: ['#a52714', '#097138']
+		colors: ['#a52714', '#097138'],
+		curveType: 'function'
 	};
 
 	var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
