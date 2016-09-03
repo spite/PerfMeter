@@ -528,7 +528,7 @@ Renderer: ${v.renderer}
 
 		frameTime = getTime() - oTime;
 
-		update();
+		update( timestamp );
 
 		contexts.forEach( function( context ) {
 			context.useProgramCount = 0;
@@ -545,7 +545,7 @@ Renderer: ${v.renderer}
 
 	}
 
-	function update(){
+	function update( timestamp ){
 
 		if( contexts.size === 0 ) return;
 
@@ -582,6 +582,8 @@ Renderer: ${v.renderer}
 			post( {
 				method: 'frame',
 				data: {
+					frame: frameId,
+					timestamp: timestamp,
 					framerate: framerate,
 					frameTime: frameTime,
 					JavaScriptTime: JavaScriptTime,
