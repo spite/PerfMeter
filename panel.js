@@ -79,21 +79,24 @@ function plotRecording( recordBuffer ) {
 	var pointsFPS = [];
 	var pointsJS = [];
 
+	var s = 2000;
+
 	recordBuffer.forEach( rec => {
-		pointsFPS.push( { date: new Date( d + rec.timestamp ), value: rec.framerate } );
-		pointsGPU.push( { date: new Date( d + rec.timestamp ), value: rec.disjointTime / ( 1000 * 1000 ) } );
-		pointsJS.push( { date: new Date( d + rec.timestamp ), value: rec.JavaScriptTime / ( 1000 * 1000 ) } );
+		pointsFPS.push( { date: new Date( d + rec.timestamp * s ), value: rec.framerate } );
+		pointsGPU.push( { date: new Date( d + rec.timestamp * s ), value: rec.disjointTime / ( 1000 * 1000 ) } );
+		pointsJS.push( { date: new Date( d + rec.timestamp * s ), value: rec.frameTime } );
 	} );
 
 	MG.data_graphic({
-		title: "Downloads",
-		description: "This graphic shows a time-series of downloads.",
+		title: "Metrics",
+		description: "FPS, GPU, JS",
 		data: [ pointsFPS, pointsGPU, pointsJS ],
 		full_width: true,
 		animate_on_load: true,
         area: false,
         y_extended_ticks: true,
 		height: 250,
+		x_axis: false,
 		x_accessor: 'date',
 		x_rug: true,
 		target: '#chart_div',
