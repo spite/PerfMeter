@@ -168,6 +168,7 @@ function initialize( panel ) {
 				`window.__PerfMeterStopRecording();`,
 				( result, isException ) => log( result, isException )
 			);
+			panelWindow.plotRecording( recordBuffer );
 		}
 
 		panelWindow.updateSettings = function() {
