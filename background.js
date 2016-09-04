@@ -54,7 +54,7 @@ var connections = {};
 var reloadTriggered = false;
 
 // Post back to Devtools from content
-chrome.runtime.onMessage.addListener( function (message, sender, sendResponse) {
+chrome.runtime.onMessage.addListener( ( message, sender, sendResponse ) => {
 
 	//log( 'onMessage', message, sender );
 	if ( sender.tab && connections[ sender.tab.id ] ) {
@@ -66,7 +66,7 @@ chrome.runtime.onMessage.addListener( function (message, sender, sendResponse) {
 
 } );
 
-chrome.runtime.onConnect.addListener( function( port ) {
+chrome.runtime.onConnect.addListener( port => {
 
 	log( 'New connection (chrome.runtime.onConnect) from', port.name, port.sender.frameId, port );
 
@@ -127,7 +127,7 @@ chrome.runtime.onConnect.addListener( function( port ) {
 
 	port.onMessage.addListener( listener );
 
-	port.onDisconnect.addListener( function() {
+	port.onDisconnect.addListener( _ => {
 
 		port.onMessage.removeListener( listener );
 
@@ -153,22 +153,22 @@ chrome.runtime.onConnect.addListener( function( port ) {
 
 });
 
-chrome.webRequest.onBeforeRequest.addListener( function() {
+chrome.webRequest.onBeforeRequest.addListener( details => {
 
 	if( reloadTriggered ) {
 		return;
 	}
 
 	if( settings.autoinstrument ) {
-		if( connections[ arguments[ 0 ].tabId ] && connections[ arguments[ 0 ].tabId ].devtools ) {
+		if( connections[ details.tabId ] && connections[ details.tabId ].devtools ) {
 			//log( 'webRequest', 'inject' )
-			connections[ arguments[ 0 ].tabId ].devtools.postMessage( { action: 'inject' } );
+			connections[ details.tabId ].devtools.postMessage( { action: 'inject' } );
 		}
 	}
 
 }, {urls: ["<all_urls>"]} );
 
-chrome.tabs.onUpdated.addListener( function( tabId, info, tab ) {
+chrome.tabs.onUpdated.addListener( ( tabId, info, tab ) => {
 
 	//log( 'onUpdate', tabId, info, tab );
 

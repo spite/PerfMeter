@@ -1,4 +1,4 @@
-'use strict'
+"use strict";
 
 var verbose = false;
 
@@ -287,29 +287,26 @@ Renderer: ${v.renderer}
 
 		}
 
-		for( var j in proto.prototype ) {
-			try {
-				if( typeof proto.prototype[ j ] === 'function' ){
-					( function( id ) {
-						var fn = j;
-						var time;
-						proto.prototype[ fn ] = _h(
-							proto.prototype[ fn ],
-							function() {
-								time = getTime();
-							},
-							function() {
-								if( settings.logOperations ) contexts.get( this ).log.push( fn );
-								contexts.get( this ).JavaScriptTime += getTime() - time;
-							}
-							);
-					})( j );
-
-				}
+		Object.keys( proto.prototype ).filter( v => {
+			try{
+				if( typeof proto.prototype[ v ] === 'function' ) return true;
 			} catch( e ) {
-			//console.log( j );
 			}
-		}
+			return false;
+		} ).forEach( fn => {
+			var time;
+			proto.prototype[ fn ] = _h(
+				proto.prototype[ fn ],
+				function() {
+					time = getTime();
+				},
+				function() {
+					var ctx = contexts.get( this );
+					if( settings.logOperations ) ctx.log.push( fn );
+					ctx.JavaScriptTime += getTime() - time;
+				}
+			);
+		} );
 
 	}
 

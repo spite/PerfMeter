@@ -187,8 +187,8 @@ function initialize( panel ) {
 
 	} );
 
-	panel.onHidden.addListener(function (panelWindow) {
+	panel.onHidden.addListener( wnd => {
 		post( { action: 'onHidden' } );
-	});
+	} );
 
 }
