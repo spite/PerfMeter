@@ -338,8 +338,6 @@ Renderer: ${v.renderer}
 		instrumentContext( WebGLRenderingContext );
 		if( glInfo.WebGL2Available ) instrumentContext( WebGL2RenderingContext );
 
-		originalRAF( process );
-
 	}
 
 	// WebGL with ANGLE_instanced_arrays Extension
@@ -623,6 +621,9 @@ Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performanc
 
 	}
 
+	originalRAF( process );
+
 } else {
 	if( verbose ) log( 'Already instrumented. Skipping', document.location.href )
 }
+
