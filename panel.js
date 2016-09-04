@@ -1,24 +1,29 @@
+"use strict";
+
 var reloadButton = document.getElementById( 'reload-button' );
 
-reloadButton.addEventListener( 'click', function( e ) {
+reloadButton.addEventListener( 'click', e => {
 
 	reload();
+	e.preventDefault();
 
 } );
 
 var startRecordDataButton = document.getElementById( 'start-record-data-button' );
 
-startRecordDataButton.addEventListener( 'click', function( e ) {
+startRecordDataButton.addEventListener( 'click', e => {
 
 	startRecordingData();
+	e.preventDefault();
 
 } );
 
 var stopRecordDataButton = document.getElementById( 'stop-record-data-button' );
 
-stopRecordDataButton.addEventListener( 'click', function( e ) {
+stopRecordDataButton.addEventListener( 'click', e => {
 
 	stopRecordingData();
+	e.preventDefault();
 
 } );
 
@@ -26,6 +31,7 @@ document.getElementById( 'autoinstrument' ).addEventListener( 'change', e => {
 
 	window.settings.autoinstrument = e.target.checked;
 	updateSettings();
+	e.preventDefault();
 
 } );
 
@@ -33,6 +39,7 @@ document.getElementById( 'show-gpuinfo' ).addEventListener( 'change', e => {
 
 	window.settings.showGPUInfo = e.target.checked;
 	updateSettings();
+	e.preventDefault();
 
 } );
 
