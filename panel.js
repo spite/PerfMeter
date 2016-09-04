@@ -82,6 +82,7 @@ function plotRecording( recordBuffer ) {
 	var pointsGPU = [];
 	var pointsFPS = [];
 	var pointsJS = [];
+	var pointsDrawCalls = [];
 
 	var s = 2000;
 
@@ -89,28 +90,29 @@ function plotRecording( recordBuffer ) {
 		pointsFPS.push( { date: new Date( d + rec.timestamp * s ), value: rec.framerate } );
 		pointsGPU.push( { date: new Date( d + rec.timestamp * s ), value: rec.disjointTime / ( 1000 * 1000 ) } );
 		pointsJS.push( { date: new Date( d + rec.timestamp * s ), value: rec.frameTime } );
+		pointsDrawCalls.push( { date: new Date( d + rec.timestamp * s ), value: rec.drawCount } );
 	} );
 
-	MG.data_graphic({
+	MG.data_graphic( {
 		title: "Metrics",
 		chart_type: 'line',
 		description: "FPS, GPU, JS",
-		data: [ pointsFPS, pointsGPU, pointsJS ],
+		brushing: true,
+		data: [ pointsFPS, pointsGPU, pointsJS, pointsDrawCalls ],
 		full_width: true,
 		height: 200,
 		animate_on_load: true,
         area: true,
         y_extended_ticks: true,
         interpolate: d3.curveCatmullRomOpen, //d3.curveLinear,
-		height: 250,
 		x_axis: false,
 		x_accessor: 'date',
 		x_rug: true,
 		target: '#chart_div',
-		legend: ['FPS','GPU','JS'],
+		legend: ['FPS','GPU','JS', 'Draw calls' ],
         legend_target: 'div#custom-color-key',
-        colors: ['blue', 'rgb(255,100,43)', '#CCCCFF'],
+        colors: ['blue', 'rgb(255,100,43)', '#CCCCFF', '#b70000' ],
         aggregate_rollover: true
-	})
+	} );
 
 }
