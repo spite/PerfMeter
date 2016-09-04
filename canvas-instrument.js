@@ -123,7 +123,12 @@ Renderer: ${v.renderer}
 
 	function _h ( f, pre, post ) {
 		return function () {
-			var args = pre.apply( this, arguments ) || arguments;
+			/*var args = new Array(arguments.length);
+			for (var i = 0, l = arguments.length; i < l; i++) {
+				args[i] = arguments[i];
+			}*/
+			var args = [ ...arguments ];
+			args = pre.call( this, args ) || args;
 			var res = f.apply( this, args );
 			var r;
 			return post ? ( r = post.apply( this, [ res, args ] ), r ? r : res ) : res;
