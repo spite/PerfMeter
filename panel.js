@@ -68,9 +68,6 @@ function onScriptMessage( msg ) {
 
 }
 
-google.charts.load('current', {packages: ['corechart', 'line']});
-//google.charts.setOnLoadCallback(drawBasic);
-
 function plotRecording( recordBuffer ) {
 
 	var d = Date.now();
@@ -108,30 +105,5 @@ function plotRecording( recordBuffer ) {
         colors: ['blue', 'rgb(255,100,43)', '#CCCCFF'],
         aggregate_rollover: true
 	})
-
-return;
-	var data = new google.visualization.DataTable();
-	data.addColumn('number', 'Timestamp');
-	data.addColumn('number', 'GPU (ms)');
-	data.addColumn('number', 'FPS');
-
-	var points = recordBuffer.map( rec => {
-		return [ rec.timestamp, rec.disjointTime / ( 1000 * 1000 ), rec.framerate ];
-	} );
-	data.addRows( points );
-
-	var options = {
-		hAxis: {
-			title: 'Time'
-		},
-		vAxis: {
-			title: 'Time | FPS'
-		},
-		colors: ['#a52714', '#097138'],
-		curveType: 'function'
-	};
-
-	var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
-	chart.draw(data, options);
 
 }
