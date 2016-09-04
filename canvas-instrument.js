@@ -585,7 +585,8 @@ Renderer: ${v.renderer}
 					framerate: framerate,
 					frameTime: frameTime,
 					JavaScriptTime: JavaScriptTime,
-					disjointTime: disjointTime
+					disjointTime: disjointTime,
+					drawCount: drawCount
 				}
 			} );
 
