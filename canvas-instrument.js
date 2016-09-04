@@ -8,7 +8,7 @@ if( !window.__PerfMeterInstrumented ) {
 
 	window.__PerfMeterSettings = function( s ) {
 		settings = s;
-	}
+	};
 
 	var recording = false;
 
@@ -16,13 +16,13 @@ if( !window.__PerfMeterInstrumented ) {
 
 		recording = true;
 
-	}
+	};
 
 	window.__PerfMeterStopRecording = function() {
 
 		recording = false;
 
-	}
+	};
 
 	function log() {
 
@@ -56,7 +56,7 @@ if( !window.__PerfMeterInstrumented ) {
 			renderer: gl.getParameter( debugInfo.UNMASKED_RENDERER_WEBGL ),
 			glVersion: gl.getParameter( gl.VERSION ),
 			glslVersion: gl.getParameter( gl.SHADING_LANGUAGE_VERSION )
-		}
+		};
 		glInfo.versions.push( version );
 	}
 
@@ -71,7 +71,7 @@ Vendor: ${v.vendor}
 Renderer: ${v.renderer}
 `;
 		webGLInfo += glInfo;
-	} )
+	} );
 
 	function postWithContentScript( msg ) {
 
@@ -102,11 +102,11 @@ Renderer: ${v.renderer}
 
 		return window.__PerfMeterContentScript === undefined ? false : true;
 
-	}
+	};
 
 	function post( msg ) {
 
-		window.__PerfMeterContentScript ? postWithContentScript( msg ) : postWithoutContentScript( msg )
+		window.__PerfMeterContentScript ? postWithContentScript( msg ) : postWithoutContentScript( msg );
 
 	}
 
@@ -170,7 +170,7 @@ Renderer: ${v.renderer}
 				lines: 0,
 				triangles: 0,
 				log: []
-			}
+			};
 
 			contexts.set( res, ctx );
 
@@ -228,7 +228,7 @@ Renderer: ${v.renderer}
 
 			return drawElements.apply( this, arguments );
 
-		}
+		};
 
 		var drawArrays = proto.prototype.drawArrays;
 		proto.prototype.drawArrays = function() {
@@ -241,7 +241,7 @@ Renderer: ${v.renderer}
 
 			return drawArrays.apply( this, arguments );
 
-		}
+		};
 
 		var useProgram = proto.prototype.useProgram;
 		proto.prototype.useProgram = function() {
@@ -249,7 +249,7 @@ Renderer: ${v.renderer}
 			contexts.get( this ).useProgramCount++;
 			return useProgram.apply( this, arguments );
 
-		}
+		};
 
 		var bindTexture = proto.prototype.bindTexture;
 		proto.prototype.bindTexture = function() {
@@ -258,7 +258,7 @@ Renderer: ${v.renderer}
 
 			return bindTexture.apply( this, arguments );
 
-		}
+		};
 
 		var createProgram = proto.prototype.createProgram;
 		proto.prototype.createProgram = function() {
@@ -266,7 +266,7 @@ Renderer: ${v.renderer}
 			contexts.get( this ).programCount++;
 			return createProgram.apply( this, arguments );
 
-		}
+		};
 
 		var deleteProgram = proto.prototype.deleteProgram;
 		proto.prototype.deleteProgram = function() {
@@ -274,7 +274,7 @@ Renderer: ${v.renderer}
 			contexts.get( this ).programCount--;
 			return deleteProgram.apply( this, arguments );
 
-		}
+		};
 
 		var createTexture = proto.prototype.createTexture;
 		proto.prototype.createTexture = function() {
@@ -282,7 +282,7 @@ Renderer: ${v.renderer}
 			contexts.get( this ).textureCount++;
 			return createTexture.apply( this, arguments );
 
-		}
+		};
 
 		var deleteTexture = proto.prototype.deleteTexture;
 		proto.prototype.deleteTexture = function() {
@@ -290,7 +290,7 @@ Renderer: ${v.renderer}
 			contexts.get( this ).textureCount--;
 			return deleteTexture.apply( this, arguments );
 
-		}
+		};
 
 		Object.keys( proto.prototype ).filter( v => {
 			try{
@@ -326,7 +326,7 @@ Renderer: ${v.renderer}
 		fileref.type = "text/css";
 		fileref.href = settings.cssPath;
 
-		window.document.getElementsByTagName("head")[0].appendChild(fileref)
+		window.document.getElementsByTagName("head")[0].appendChild(fileref);
 
 		if( !window.document.body ) {
 			window.addEventListener( 'load', function() {
@@ -363,7 +363,7 @@ Renderer: ${v.renderer}
 				updateDrawCount( gl, ctx, arguments[ 0 ], arguments[ 2 ] );
 				return drawArraysInstancedANGLE.apply( this, arguments );
 
-			}
+			};
 
 			var drawElementsInstancedANGLE = res.drawElementsInstancedANGLE;
 			res.drawElementsInstancedANGLE = function() {
@@ -372,13 +372,13 @@ Renderer: ${v.renderer}
 				updateDrawCount( gl, ctx, arguments[ 0 ], arguments[ 1 ] );
 				return drawElementsInstancedANGLE.apply( this, arguments );
 
-			}
+			};
 
 		}
 
 		return res;
 
-	}
+	};
 
 	// WebGL2
 
@@ -392,7 +392,7 @@ Renderer: ${v.renderer}
 			updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 1 ] );
 			return drawElementsInstanced.apply( this, arguments );
 
-		}
+		};
 
 		var drawArraysInstanced = WebGL2RenderingContext.prototype.drawArraysInstanced;
 		WebGL2RenderingContext.prototype.drawArraysInstanced = function() {
@@ -402,7 +402,7 @@ Renderer: ${v.renderer}
 			updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 2 ] );
 			return drawArraysInstanced.apply( this, arguments );
 
-		}
+		};
 
 	}
 
@@ -431,7 +431,6 @@ Renderer: ${v.renderer}
 	var oTime = getTime();
 	var frameCount = 0;
 	var lastTime = getTime();
-	var startTime = getTime();
 	var frameId = 0;
 
 	var framerate = 0;
@@ -444,20 +443,19 @@ Renderer: ${v.renderer}
 
 		if( typeof c === 'function' ) rAFs.push( c ); // some pages pass null (?)
 
-	}
+	};
 
 	function process( timestamp ) {
 
 		originalRAF( process );
 
-		rAFCount = rAFs.length
+		rAFCount = rAFs.length;
 		//rAFValues.push( getTime() - oTime );
 		oTime = getTime();
 
 		disjointFrames[ frameId ] = { time: 0, queries: 0 };
-		disjointTime = 0;
 
-		contexts.forEach( function( context, id ) {
+		contexts.forEach( function( context ) {
 
 			var queryExt = context.queryExt,
 			gl = context.ctx;
@@ -480,7 +478,7 @@ Renderer: ${v.renderer}
 							delete disjointFrames[ q.frameId ];
 						}
 					}
-				} )
+				} );
 
 				var query = queryExt.createQueryEXT();
 				queryExt.beginQueryEXT( queryExt.TIME_ELAPSED_EXT, query );
@@ -497,7 +495,7 @@ Renderer: ${v.renderer}
 		var s = getTime();
 		var rAFQueue = rAFs.slice();
 		rAFs = [];
-		rAFQueue.forEach( function( c, i ) {
+		rAFQueue.forEach( function( c ) {
 			c( timestamp );
 		} );
 		JavaScriptTime = getTime() - s;
@@ -540,7 +538,7 @@ Renderer: ${v.renderer}
 			context.points = 0;
 			context.lines = 0;
 			context.triangles = 0;
-			context.log = []
+			context.log = [];
 		} );
 
 	}
@@ -599,7 +597,7 @@ Renderer: ${v.renderer}
 Frame JS Time: ${frameTime.toFixed(2)}
 Canvas: ${contexts.size}
 Canvas JS time: ${JavaScriptTime.toFixed( 2 )}
-`
+`;
 
 		var webgl = `<b>WebGL</b>
 GPU Time: ${( disjointTime / 1000000 ).toFixed( 2 )}
@@ -613,7 +611,7 @@ Total: ${totalDrawCount}
 Points: ${totalPoints}
 Lines: ${totalLines}
 Triangles: ${totalTriangles}
-`
+`;
 
 		var browser = `<b>Browser</b>
 Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}
@@ -626,6 +624,5 @@ Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performanc
 	originalRAF( process );
 
 } else {
-	if( verbose ) log( 'Already instrumented. Skipping', document.location.href )
+	if( verbose ) log( 'Already instrumented. Skipping', document.location.href );
 }
-
