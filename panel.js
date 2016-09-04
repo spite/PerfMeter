@@ -89,12 +89,15 @@ function plotRecording( recordBuffer ) {
 
 	MG.data_graphic({
 		title: "Metrics",
+		chart_type: 'line',
 		description: "FPS, GPU, JS",
 		data: [ pointsFPS, pointsGPU, pointsJS ],
 		full_width: true,
+		height: 200,
 		animate_on_load: true,
-        area: false,
+        area: true,
         y_extended_ticks: true,
+        interpolate: d3.curveCatmullRomOpen, //d3.curveLinear,
 		height: 250,
 		x_axis: false,
 		x_accessor: 'date',
