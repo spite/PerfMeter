@@ -122,7 +122,7 @@ Renderer: ${v.renderer}
 	text.setAttribute( 'id', 'perfmeter-panel' );
 
 	var _h = function( f, pre, post ) {
-		return function () {
+		return function _wrap() {
 			/*var args = new Array(arguments.length);
 			for (var i = 0, l = arguments.length; i < l; i++) {
 				args[i] = arguments[i];
@@ -300,12 +300,13 @@ Renderer: ${v.renderer}
 			return false;
 		} ).forEach( fn => {
 			var time;
+			log( fn );
 			proto.prototype[ fn ] = _h(
 				proto.prototype[ fn ],
-				function() {
+				function _pre() {
 					time = getTime();
 				},
-				function() {
+				function _post() {
 					var ctx = contexts.get( this );
 					if( settings.logOperations ) ctx.log.push( fn );
 					ctx.JavaScriptTime += getTime() - time;
@@ -460,14 +461,14 @@ Renderer: ${v.renderer}
 
 		disjointFrames[ frameId ] = { time: 0, queries: 0 };
 
-		contexts.forEach( function( context ) {
+		contexts.forEach( function _contexts( context ) {
 
 			var queryExt = context.queryExt,
 			gl = context.ctx;
 
 			if( queryExt ) {
 
-				context.queries.forEach( function( q, i ) {
+				context.queries.forEach( function _queries( q, i ) {
 					var query = q.query;
 					var available = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_AVAILABLE_EXT );
 					var disjoint = gl.getParameter( queryExt.GPU_DISJOINT_EXT );
@@ -500,7 +501,7 @@ Renderer: ${v.renderer}
 		var s = getTime();
 		var rAFQueue = rAFs.slice();
 		rAFs = [];
-		rAFQueue.forEach( function( c ) {
+		rAFQueue.forEach( function _raf( c ) {
 			c( timestamp );
 		} );
 		JavaScriptTime = getTime() - s;
