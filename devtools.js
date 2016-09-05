@@ -41,11 +41,15 @@ var scriptStatus = 0;
 
 var recordBuffer = [];
 var pollingInterval = null;
+var recording = false;
+
+var updateRecording = throttle( _ => panelWindow.updatePanelStatus(), 500, panelWindow );
 
 function processMessageFromScript( msg ) {
 
 	if( msg.method === 'frame' ) {
 		recordBuffer.push( msg.data );
+		updateRecording();
 	} else {
 		if( panelWindow ) {
 			panelWindow.onScriptMessage( msg );
@@ -126,66 +130,80 @@ function initialize( panel ) {
 
 	panel.onShown.addListener( wnd => {
 
-		panelWindow = wnd;
+		if( !panelWindow ) {
 
-		panelWindow.getScriptStatus = function() {
-			return scriptStatus;
-		};
+			panelWindow = wnd;
 
-		panelWindow.getSettings = function() {
-			return settings;
-		};
+			panelWindow.getScriptStatus = function() {
+				return scriptStatus;
+			};
 
-		panelWindow.inject = function() {
-			scriptStatus = 2;
-			chrome.devtools.inspectedWindow.eval(
-				`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
-				( result, isException ) => log( result, isException )
-			);
-		};
+			panelWindow.getSettings = function() {
+				return settings;
+			};
 
-		panelWindow.reload = function() {
-			scriptStatus = 1;
-			post( { action: 'reload' } );
-			chrome.devtools.inspectedWindow.reload( {
-				injectedScript: `(function(){var settings=${JSON.stringify( settings )}; ${script};})();`
-			} );
-		};
+			panelWindow.getRecordingStatus = function() {
+				return { status: recording, bufferSize: recordBuffer.length };
+			};
 
-		panelWindow.startRecordingData = function() {
-			log( 'Start Recording...' );
-			recordBuffer = [];
-			hasContentScript().then( _ => {
-				startRecording();
-			} ).catch( _ => {
-				pollingInterval = setInterval( poll, 100 );
-				startRecording();
-			} );
-		};
+			panelWindow.inject = function() {
+				scriptStatus = 2;
+				chrome.devtools.inspectedWindow.eval(
+					`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
+					( result, isException ) => log( result, isException )
+				);
+			};
 
-		panelWindow.stopRecordingData = function() {
-			pollingInterval = clearInterval( pollingInterval );
-			log( `Recording stopped, ${recordBuffer.length} samples taken`, recordBuffer );
-			chrome.devtools.inspectedWindow.eval(
-				`window.__PerfMeterStopRecording();`,
-				( result, isException ) => log( result, isException )
-			);
-			panelWindow.plotRecording( recordBuffer );
-		};
+			panelWindow.reload = function() {
+				scriptStatus = 1;
+				post( { action: 'reload' } );
+				chrome.devtools.inspectedWindow.reload( {
+					injectedScript: `(function(){var settings=${JSON.stringify( settings )}; ${script};})();`
+				} );
+			};
 
-		panelWindow.updateSettings = function() {
+			panelWindow.startRecordingData = function() {
+				log( 'Start Recording...' );
+				recording = true;
+				recordBuffer = [];
+				hasContentScript().then( _ => {
+					startRecording();
+				} ).catch( _ => {
+					pollingInterval = setInterval( poll, 100 );
+					startRecording();
+				} );
+				panelWindow.updatePanelStatus();
+			};
 
-			post( {
-				action: 'setSettings',
-				settings: settings
-			} );
+			panelWindow.stopRecordingData = function() {
+				recording = false;
+				pollingInterval = clearInterval( pollingInterval );
+				log( `Recording stopped, ${recordBuffer.length} samples taken`, recordBuffer );
+				chrome.devtools.inspectedWindow.eval(
+					`window.__PerfMeterStopRecording();`,
+					( result, isException ) => log( result, isException )
+				);
+				panelWindow.updatePanelStatus();
+				setTimeout( _ => panelWindow.plotRecording( recordBuffer ), 1 );
+			};
 
-		};
+			panelWindow.updateSettings = function() {
+
+				post( {
+					action: 'setSettings',
+					settings: settings
+				} );
+
+			};
+
+		}
+
+		log( 'Show' );
 
 		panelWindow.setSettings( settings );
-		panelWindow.updateScriptStatus();
+		panelWindow.updatePanelStatus();
 
-		post( { action: 'onShown' } );
+		//post( { action: 'onShown' } );
 
 	} );
 

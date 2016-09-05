@@ -1,33 +1,27 @@
 "use strict";
 
-var reloadButton = document.getElementById( 'reload-button' );
-
-reloadButton.addEventListener( 'click', e => {
+ge( 'reload-button' ).addEventListener( 'click', e => {
 
 	reload();
 	e.preventDefault();
 
 } );
 
-var startRecordDataButton = document.getElementById( 'start-record-data-button' );
-
-startRecordDataButton.addEventListener( 'click', e => {
+ge( 'start-record-data-button' ).addEventListener( 'click', e => {
 
 	startRecordingData();
 	e.preventDefault();
 
 } );
 
-var stopRecordDataButton = document.getElementById( 'stop-record-data-button' );
-
-stopRecordDataButton.addEventListener( 'click', e => {
+ge( 'stop-record-data-button' ).addEventListener( 'click', e => {
 
 	stopRecordingData();
 	e.preventDefault();
 
 } );
 
-document.getElementById( 'autoinstrument' ).addEventListener( 'change', e => {
+ge( 'autoinstrument' ).addEventListener( 'change', e => {
 
 	window.settings.autoinstrument = e.target.checked;
 	updateSettings();
@@ -35,7 +29,7 @@ document.getElementById( 'autoinstrument' ).addEventListener( 'change', e => {
 
 } );
 
-document.getElementById( 'show-gpuinfo' ).addEventListener( 'change', e => {
+ge( 'show-gpuinfo' ).addEventListener( 'change', e => {
 
 	window.settings.showGPUInfo = e.target.checked;
 	updateSettings();
@@ -47,20 +41,43 @@ function setSettings( settings ) {
 
 	window.settings = settings;
 
-	document.getElementById( 'autoinstrument' ).checked = settings.autoinstrument;
-	document.getElementById( 'show-gpuinfo' ).checked = settings.showGPUInfo;
+	ge( 'autoinstrument' ).checked = settings.autoinstrument;
+	ge( 'show-gpuinfo' ).checked = settings.showGPUInfo;
+
+}
+
+function updatePanelStatus() {
+
+	updateScriptStatus();
+	updateRecordingStatus();
+
+}
+
+function updateRecordingStatus() {
+
+	var recordingStatus = getRecordingStatus();
+	if( recordingStatus.status ){
+		ge( 'recording-progress' ).textContent = `Recording. ${recordingStatus.bufferSize} samples...`;
+		ge( 'start-record-data-button' ).style.display = 'none';
+		ge( 'stop-record-data-button' ).style.display = 'block';
+	} else {
+		ge( 'recording-progress' ).textContent = 'Standing by';
+		ge( 'start-record-data-button' ).style.display = 'block';
+		ge( 'stop-record-data-button' ).style.display = 'none';
+	}
 
 }
 
 function updateScriptStatus() {
 
-	document.getElementById( 'not-instrumented' ).style.display = 'block'; reloadButton.style.display = 'block';
+	ge( 'not-instrumented' ).style.display = 'block';
+	ge( 'reload-button' ).style.display = 'block';
 
 	[].forEach.call( document.querySelectorAll( '.instrument-status' ), el => el.style.display = 'none' );
 	switch( getScriptStatus() ) {
-		case 0: document.getElementById( 'not-instrumented' ).style.display = 'block'; reloadButton.style.display = 'block'; break;
-		case 1: document.getElementById( 'injected-instrumented' ).style.display = 'block'; reloadButton.style.display = 'none';  break;
-		case 2: document.getElementById( 'executed-instrumented' ).style.display = 'block'; reloadButton.style.display = 'block';  break;
+		case 0: ge( 'not-instrumented' ).style.display = 'block'; ge( 'reload-button' ).style.display = 'block'; break;
+		case 1: ge( 'injected-instrumented' ).style.display = 'block'; ge( 'reload-button' ).style.display = 'none';  break;
+		case 2: ge( 'executed-instrumented' ).style.display = 'block'; ge( 'reload-button' ).style.display = 'block';  break;
 	}
 
 }
