@@ -301,7 +301,6 @@ Renderer: ${v.renderer}
 			return false;
 		} ).forEach( fn => {
 			var time;
-			log( fn );
 			proto.prototype[ fn ] = _wrap(
 				proto.prototype[ fn ],
 				function _pre() {
@@ -457,6 +456,7 @@ Renderer: ${v.renderer}
 
 		disjointFrames[ frameId ] = { time: 0, queries: 0 };
 
+		var id = 0;
 		contexts.forEach( function _contexts( context ) {
 
 			var queryExt = context.queryExt,
@@ -465,25 +465,34 @@ Renderer: ${v.renderer}
 			if( queryExt ) {
 
 				context.queries.forEach( function _queries( q, i ) {
+
 					var query = q.query;
 					var available = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_AVAILABLE_EXT );
 					var disjoint = gl.getParameter( queryExt.GPU_DISJOINT_EXT );
+
+					if( available === null && disjoint === null ) { // Android?
+						context.queries.splice( i, 1 );
+						disjointFrames[ q.frameId ].queries--;
+					}
+
 					if( available && !disjoint ) {
 						var timeElapsed = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_EXT );
 						context.queries.splice( i, 1 );
 						disjointFrames[ q.frameId ].time += timeElapsed;
 						disjointFrames[ q.frameId ].queries--;
-						if( disjointFrames[ q.frameId ].queries === 0 ) {
-							var t = disjointFrames[ q.frameId ].time;
-							context.disjointTime += t;
-							disjointFrames[ q.frameId ] = null;
-							delete disjointFrames[ q.frameId ];
-							if( recording && framesQueue[ q.frameId ] ) {
-								framesQueue[ q.frameId ].contexts.get( context ).disjointTime += t;
-								framesQueue[ q.frameId ].completed = true;
-							}
+					}
+
+					if( disjointFrames[ q.frameId ].queries === 0 ) {
+						var t = disjointFrames[ q.frameId ].time;
+						context.disjointTime += t;
+						disjointFrames[ q.frameId ] = null;
+						delete disjointFrames[ q.frameId ];
+						if( recording && framesQueue[ q.frameId ] ) {
+							framesQueue[ q.frameId ].contexts.get( context ).disjointTime += t;
+							framesQueue[ q.frameId ].completed = true;
 						}
 					}
+
 				} );
 
 				var query = queryExt.createQueryEXT();
@@ -492,6 +501,8 @@ Renderer: ${v.renderer}
 				disjointFrames[ frameId ].queries++;
 
 			}
+
+			id++;
 
 		} );
 
