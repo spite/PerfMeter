@@ -5,3 +5,13 @@ h1{ font-size: 14px; }
 #scriptStatus{ background-color: #FFDA9E; padding: 10px; margin: 10px 0; }
 button{ padding: 4px; cursor: pointer; }
 input[type=checkbox]:disabled+label { opacity: .5; }
+.horizontal-bar{
+	display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    list-style: none;
+}
+.horizontal-bar li{
+	display: flex;
+    align-items: flex-start;
+}
