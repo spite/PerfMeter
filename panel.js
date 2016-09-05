@@ -54,14 +54,14 @@ function setSettings( settings ) {
 
 function updateScriptStatus() {
 
-	//document.getElementById( 'not-instrumented' ).style.display = 'block'; reloadButton.style.display = 'block';
+	document.getElementById( 'not-instrumented' ).style.display = 'block'; reloadButton.style.display = 'block';
 
-/*	[].forEach.call( document.querySelectorAll( '.instrument-status' ), el => el.style.display = 'none' );
+	[].forEach.call( document.querySelectorAll( '.instrument-status' ), el => el.style.display = 'none' );
 	switch( getScriptStatus() ) {
 		case 0: document.getElementById( 'not-instrumented' ).style.display = 'block'; reloadButton.style.display = 'block'; break;
 		case 1: document.getElementById( 'injected-instrumented' ).style.display = 'block'; reloadButton.style.display = 'none';  break;
 		case 2: document.getElementById( 'executed-instrumented' ).style.display = 'block'; reloadButton.style.display = 'block';  break;
-	}*/
+	}
 
 }
 
