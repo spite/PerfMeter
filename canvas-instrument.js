@@ -434,7 +434,7 @@ Renderer: ${v.renderer}
 	var frameCount = 0;
 	var lastTime = getTime();
 	var frameId = 0;
-	var frames = {};
+	var framesQueue = {};
 
 	var framerate = 0;
 	var JavaScriptTime = 0;
@@ -452,13 +452,8 @@ Renderer: ${v.renderer}
 
 		originalRAF( process );
 
-		frames[ frameId ] = {
-
-		};
-
-		rAFCount = rAFs.length;
-		//rAFValues.push( getTime() - oTime );
 		oTime = getTime();
+		rAFCount = rAFs.length;
 
 		disjointFrames[ frameId ] = { time: 0, queries: 0 };
 
@@ -479,10 +474,14 @@ Renderer: ${v.renderer}
 						disjointFrames[ q.frameId ].time += timeElapsed;
 						disjointFrames[ q.frameId ].queries--;
 						if( disjointFrames[ q.frameId ].queries === 0 ) {
-							//extValues.push( disjointFrames[ q.frameId ].time );
-							context.disjointTime += disjointFrames[ q.frameId ].time;
+							var t = disjointFrames[ q.frameId ].time;
+							context.disjointTime += t;
 							disjointFrames[ q.frameId ] = null;
 							delete disjointFrames[ q.frameId ];
+							if( recording && framesQueue[ q.frameId ] ) {
+								framesQueue[ q.frameId ].contexts.get( context ).disjointTime += t;
+								framesQueue[ q.frameId ].completed = true;
+							}
 						}
 					}
 				} );
@@ -493,8 +492,6 @@ Renderer: ${v.renderer}
 				disjointFrames[ frameId ].queries++;
 
 			}
-
-			//console.log( context.queries.length );
 
 		} );
 
@@ -517,7 +514,6 @@ Renderer: ${v.renderer}
 		frameCount++;
 		if( getTime() > lastTime + 1000 ) {
 			framerate = frameCount * 1000 / ( getTime() - lastTime );
-			//frameValues.push( frameCount * 1000 / ( getTime() - lastTime ) );
 			frameCount = 0;
 			lastTime = getTime();
 		}
@@ -535,6 +531,36 @@ Renderer: ${v.renderer}
 
 		update( timestamp );
 
+		if( recording ) {
+
+			var frameInfo = {
+				frameId: frameId,
+				framerate: framerate,
+				timestamp: oTime,
+				frameTime: frameTime,
+				completed: false,
+				contexts: new Map()
+			};
+
+			contexts.forEach( function( context ) {
+				frameInfo.contexts.set( context, {
+					useProgramCount: context.useProgramCount,
+					drawCount: context.drawCount,
+					instancedDrawCount: context.instancedDrawCount,
+					bindTextureCount: context.bindTextureCount,
+					JavaScriptTime: context.JavaScriptTime,
+					disjointTime: context.disjointTime,
+					points: context.points,
+					lines: context.lines,
+					triangles: context.triangles,
+					log: context.log
+				} );
+			} );
+
+			framesQueue[ frameId ] = frameInfo;
+
+		}
+
 		contexts.forEach( function( context ) {
 			context.useProgramCount = 0;
 			context.drawCount = 0;
@@ -550,9 +576,7 @@ Renderer: ${v.renderer}
 
 	};
 
-	var update = function( timestamp ){
-
-		if( contexts.size === 0 ) return;
+	var compileFrame = function( contexts ) {
 
 		var drawCount = 0;
 		var instancedDrawCount = 0;
@@ -582,50 +606,87 @@ Renderer: ${v.renderer}
 			if( context.type === '3d' ) hasWebGL = true;
 		} );
 
+		return {
+			drawCount: drawCount,
+			instancedDrawCount: instancedDrawCount,
+			JavaScriptTime: JavaScriptTime,
+			disjointTime: disjointTime,
+			useProgramCount: useProgramCount,
+			bindTextureCount: bindTextureCount,
+			totalPoints: totalPoints,
+			totalLines: totalLines,
+			totalTriangles: totalTriangles,
+			programCount: programCount,
+			textureCount: textureCount,
+			totalDrawCount: drawCount + instancedDrawCount,
+			hasWebGL: hasWebGL
+		}
+
+	};
+
+	var update = function( timestamp ){
+
+		if( contexts.size === 0 ) return;
+
 		if( recording ) {
 
-			post( {
-				method: 'frame',
-				data: {
-					frame: frameId,
-					timestamp: timestamp,
-					framerate: framerate,
-					frameTime: frameTime,
-					JavaScriptTime: JavaScriptTime,
-					disjointTime: disjointTime,
-					drawCount: drawCount
+			Object.keys( framesQueue ).forEach( n => {
+
+				var frame = framesQueue[ n ];
+				if( frame.completed ) {
+
+					var res = compileFrame( frame.contexts );
+
+					post( {
+						method: 'frame',
+						data: {
+							frame: frame.frameId,
+							timestamp: frame.timestamp,
+							framerate: frame.framerate,
+							frameTime: frame.frameTime,
+							JavaScriptTime: res.JavaScriptTime,
+							disjointTime: res.disjointTime,
+							drawCount: res.drawCount
+						}
+
+					} );
+
+					framesQueue[ n ] = null;
+					delete framesQueue[ n ];
+
 				}
+
 			} );
 
 		}
 
-		var totalDrawCount = drawCount + instancedDrawCount;
+		var frame = compileFrame( contexts );
 
 		var general = `FPS: ${framerate.toFixed( 2 )}
 Frame JS Time: ${frameTime.toFixed(2)}
 Canvas: ${contexts.size}
-Canvas JS time: ${JavaScriptTime.toFixed( 2 )}
+Canvas JS time: ${frame.JavaScriptTime.toFixed( 2 )}
 `;
 
 		var webgl = `<b>WebGL</b>
-GPU Time: ${( disjointTime / 1000000 ).toFixed( 2 )}
-programs: ${programCount}
-textures: ${textureCount}
-useProgram: ${useProgramCount}
-bindTexture: ${bindTextureCount}
-Draw: ${drawCount}
-Instanced: ${instancedDrawCount}
-Total: ${totalDrawCount}
-Points: ${totalPoints}
-Lines: ${totalLines}
-Triangles: ${totalTriangles}
+GPU Time: ${( frame.disjointTime / 1000000 ).toFixed( 2 )}
+programs: ${frame.programCount}
+textures: ${frame.textureCount}
+useProgram: ${frame.useProgramCount}
+bindTexture: ${frame.bindTextureCount}
+Draw: ${frame.drawCount}
+Instanced: ${frame.instancedDrawCount}
+Total: ${frame.totalDrawCount}
+Points: ${frame.totalPoints}
+Lines: ${frame.totalLines}
+Triangles: ${frame.totalTriangles}
 `;
 
 		var browser = `<b>Browser</b>
 Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}
 `;
 
-		text.innerHTML = general + ( hasWebGL ? webgl : '' ) + browser + ( settings.showGPUInfo ? webGLInfo : '' );
+		text.innerHTML = general + ( frame.hasWebGL ? webgl : '' ) + browser + ( settings.showGPUInfo ? webGLInfo : '' );
 
 	};
 
