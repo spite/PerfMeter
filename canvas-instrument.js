@@ -136,6 +136,7 @@ Renderer: ${v.renderer}
 	};
 
 	var contexts = new Map();
+	var allCanvasAre2D = true;
 
 	HTMLCanvasElement.prototype.getContext = _wrap(
 	    HTMLCanvasElement.prototype.getContext,
@@ -177,6 +178,7 @@ Renderer: ${v.renderer}
 
 			if( [ 'webgl', 'experimental-webgl', 'webgl2', 'experimental-webgl2' ].some( id => id == args[ 0 ] ) ) {
 
+				allCanvasAre2D = false;
 				ctx.type = '3d';
 
 				var queryExt = res.getExtension( 'EXT_disjoint_timer_query' );
@@ -550,7 +552,7 @@ Renderer: ${v.renderer}
 				framerate: framerate,
 				timestamp: oTime,
 				frameTime: frameTime,
-				completed: false,
+				completed: allCanvasAre2D,
 				contexts: new Map()
 			};
 
