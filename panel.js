@@ -95,6 +95,7 @@ function plotRecording( recordBuffer ) {
 
 	MG.data_graphic( {
 		title: "Metrics",
+		show_tooltips: false,
 		chart_type: 'line',
 		description: "FPS, GPU, JS",
 		brushing: true,
