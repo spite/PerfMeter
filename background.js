@@ -1,3 +1,5 @@
+"use strict";
+
 var extensionId = chrome.runtime.id;
 log( 'Background', extensionId );
 
@@ -10,7 +12,7 @@ var defaultSettings = {
 	logOperations: !false,
 	autoinstrument: true
 
-}
+};
 
 chrome.system.cpu.getInfo( res => log( res ) );
 chrome.system.display.getInfo( res => log( res ) );
@@ -76,7 +78,7 @@ chrome.runtime.onConnect.addListener( port => {
 
 		var tabId;
 
-		if( msg.tabId ) tabId = msg.tabId
+		if( msg.tabId ) tabId = msg.tabId;
 		else tabId = sender.sender.tab.id;
 
 		if( !connections[ tabId ] ) connections[ tabId ] = {};
@@ -118,7 +120,7 @@ chrome.runtime.onConnect.addListener( port => {
 			//log( settings );
 			saveSettings( settings ).then( res => {
 				notifySettings();
-			} )
+			} );
 
 			break;
 		}
@@ -142,8 +144,7 @@ chrome.runtime.onConnect.addListener( port => {
 				connections[ c ] = null;
 				delete connections[ c ];
 			}
-		} )
-
+		} );
 
 	} );
 
@@ -176,4 +177,5 @@ chrome.tabs.onUpdated.addListener( ( tabId, info, tab ) => {
 		reloadTriggered = false;
 		log( 'finished reload' );
 	}
-})
+
+});
