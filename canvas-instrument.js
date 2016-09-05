@@ -121,23 +121,24 @@ Renderer: ${v.renderer}
 	var text = document.createElement( 'div' );
 	text.setAttribute( 'id', 'perfmeter-panel' );
 
-	var _h = function( f, pre, post ) {
+	var _wrap = function( f, pre, post ) {
+
 		return function _wrap() {
-			/*var args = new Array(arguments.length);
-			for (var i = 0, l = arguments.length; i < l; i++) {
-				args[i] = arguments[i];
-			}*/
+
 			var args = [ ...arguments ];
 			args = pre.call( this, args ) || args;
 			var res = f.apply( this, args );
 			var r;
 			return post ? ( r = post.apply( this, [ res, args ] ), r ? r : res ) : res;
+
 		};
+
 	};
 
 	var contexts = new Map();
 
-	HTMLCanvasElement.prototype.getContext = _h( HTMLCanvasElement.prototype.getContext,
+	HTMLCanvasElement.prototype.getContext = _wrap(
+	    HTMLCanvasElement.prototype.getContext,
 		function() {
 			this.style.border = '1px solid #9EFD38';
 			this.style.boxSizing = 'border-box';
@@ -301,7 +302,7 @@ Renderer: ${v.renderer}
 		} ).forEach( fn => {
 			var time;
 			log( fn );
-			proto.prototype[ fn ] = _h(
+			proto.prototype[ fn ] = _wrap(
 				proto.prototype[ fn ],
 				function _pre() {
 					time = getTime();
