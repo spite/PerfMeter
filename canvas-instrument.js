@@ -459,10 +459,11 @@ Renderer: ${v.renderer}
 		var id = 0;
 		contexts.forEach( function _contexts( context ) {
 
-			var queryExt = context.queryExt,
-			gl = context.ctx;
+			var queryExt = context.queryExt;
 
 			if( queryExt ) {
+
+				var gl = context.ctx;
 
 				context.queries.forEach( function _queries( q, i ) {
 
