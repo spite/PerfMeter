@@ -24,17 +24,17 @@ if( !window.__PerfMeterInstrumented ) {
 
 	};
 
-	function log() {
+	var log = function() {
 
-		console.log.apply(
-			console, [
+		window.console.log.apply(
+			window.console, [
 				`%c PerfMeter `,
 				'background: #1E9433; color: #ffffff; text-shadow: 0 -1px #000; padding: 4px 0 4px 0; line-height: 0',
 				...arguments
 			]
 		);
 
-	}
+	};
 
 	log( 'Canvas Instrumentation', document.location.href, settings );
 
@@ -46,7 +46,7 @@ if( !window.__PerfMeterInstrumented ) {
 		WebGL2Available: 'WebGL2RenderingContext' in window
 	};
 
-	function getGLInfo( context ) {
+	var getGLInfo = function( context ) {
 		var gl = document.createElement( 'canvas' ).getContext( context );
 		if( !gl ) return;
 		var debugInfo = gl.getExtension( 'WEBGL_debug_renderer_info' );
@@ -58,7 +58,7 @@ if( !window.__PerfMeterInstrumented ) {
 			glslVersion: gl.getParameter( gl.SHADING_LANGUAGE_VERSION )
 		};
 		glInfo.versions.push( version );
-	}
+	};
 
 	getGLInfo( 'webgl' );
 	getGLInfo( 'webgl2' );
@@ -73,28 +73,28 @@ Renderer: ${v.renderer}
 		webGLInfo += glInfo;
 	} );
 
-	function postWithContentScript( msg ) {
+	var postWithContentScript = function( msg ) {
 
 		msg.source = 'perfmeter-script';
 		window.postMessage( msg, '*' );
 
-	}
+	};
 
 	var messageQueue = [];
-	function postWithoutContentScript( msg ) {
+	var postWithoutContentScript = function( msg ) {
 
 		msg.source = 'perfmeter-script';
 		messageQueue.push( msg );
 
-	}
+	};
 
-	function queryMessageQueue() {
+	var queryMessageQueue = function() {
 
 		var res = messageQueue.slice();
 		messageQueue = [];
 		return res;
 
-	}
+	};
 
 	window.__PerfMeterQueryMessageQueue = queryMessageQueue;
 
@@ -104,24 +104,24 @@ Renderer: ${v.renderer}
 
 	};
 
-	function post( msg ) {
+	var post = function( msg ) {
 
-		window.__PerfMeterContentScript ? postWithContentScript( msg ) : postWithoutContentScript( msg );
+		( window.__PerfMeterContentScript ? postWithContentScript : postWithoutContentScript )( msg );
 
-	}
+	};
 
 	post( { method: 'ready' } );
 
-	function getTime(){
+	var getTime = function(){
 
 		return performance.now();
 
-	}
+	};
 
 	var text = document.createElement( 'div' );
 	text.setAttribute( 'id', 'perfmeter-panel' );
 
-	function _h ( f, pre, post ) {
+	var _h = function( f, pre, post ) {
 		return function () {
 			/*var args = new Array(arguments.length);
 			for (var i = 0, l = arguments.length; i < l; i++) {
@@ -133,7 +133,7 @@ Renderer: ${v.renderer}
 			var r;
 			return post ? ( r = post.apply( this, [ res, args ] ), r ? r : res ) : res;
 		};
-	}
+	};
 
 	var contexts = new Map();
 
@@ -189,7 +189,7 @@ Renderer: ${v.renderer}
 		}
 	);
 
-	function updateDrawCount( gl, ctx, mode, count ) {
+	var updateDrawCount = function( gl, ctx, mode, count ) {
 
 		switch( mode ){
 			case gl.POINTS:
@@ -213,9 +213,9 @@ Renderer: ${v.renderer}
 				break;
 		}
 
-	}
+	};
 
-	function instrumentContext( proto ) {
+	var instrumentContext = function( proto ) {
 
 		var drawElements = proto.prototype.drawElements;
 		proto.prototype.drawElements = function() {
@@ -313,9 +313,9 @@ Renderer: ${v.renderer}
 			);
 		} );
 
-	}
+	};
 
-	function instrumentCanvas() {
+	var instrumentCanvas = function() {
 
 		if( instrumented ) return;
 
@@ -340,7 +340,7 @@ Renderer: ${v.renderer}
 		instrumentContext( WebGLRenderingContext );
 		if( glInfo.WebGL2Available ) instrumentContext( WebGL2RenderingContext );
 
-	}
+	};
 
 	// WebGL with ANGLE_instanced_arrays Extension
 	// There isn't an available ANGLEInstancedArrays constructor
@@ -432,6 +432,7 @@ Renderer: ${v.renderer}
 	var frameCount = 0;
 	var lastTime = getTime();
 	var frameId = 0;
+	var frames = {};
 
 	var framerate = 0;
 	var JavaScriptTime = 0;
@@ -445,9 +446,13 @@ Renderer: ${v.renderer}
 
 	};
 
-	function process( timestamp ) {
+	var process = function( timestamp ) {
 
 		originalRAF( process );
+
+		frames[ frameId ] = {
+
+		};
 
 		rAFCount = rAFs.length;
 		//rAFValues.push( getTime() - oTime );
@@ -541,9 +546,9 @@ Renderer: ${v.renderer}
 			context.log = [];
 		} );
 
-	}
+	};
 
-	function update( timestamp ){
+	var update = function( timestamp ){
 
 		if( contexts.size === 0 ) return;
 
@@ -620,7 +625,7 @@ Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performanc
 
 		text.innerHTML = general + ( hasWebGL ? webgl : '' ) + browser + ( settings.showGPUInfo ? webGLInfo : '' );
 
-	}
+	};
 
 	originalRAF( process );
 
