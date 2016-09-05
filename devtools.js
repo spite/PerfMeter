@@ -1,7 +1,9 @@
+"use strict";
+
 chrome.devtools.panels.create( 'PerfMeter', 'assets/icon.svg', 'panel.html', initialize );
 
 var port = chrome.runtime.connect( null, { name: `devtools` } );
-var tabId = chrome.devtools.inspectedWindow.tabId
+var tabId = chrome.devtools.inspectedWindow.tabId;
 
 function log( ...args ) {
 
@@ -128,11 +130,11 @@ function initialize( panel ) {
 
 		panelWindow.getScriptStatus = function() {
 			return scriptStatus;
-		}
+		};
 
 		panelWindow.getSettings = function() {
 			return settings;
-		}
+		};
 
 		panelWindow.inject = function() {
 			scriptStatus = 2;
@@ -140,7 +142,7 @@ function initialize( panel ) {
 				`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
 				( result, isException ) => log( result, isException )
 			);
-		}
+		};
 
 		panelWindow.reload = function() {
 			scriptStatus = 1;
@@ -148,7 +150,7 @@ function initialize( panel ) {
 			chrome.devtools.inspectedWindow.reload( {
 				injectedScript: `(function(){var settings=${JSON.stringify( settings )}; ${script};})();`
 			} );
-		}
+		};
 
 		panelWindow.startRecordingData = function() {
 			log( 'Start Recording...' );
@@ -159,7 +161,7 @@ function initialize( panel ) {
 				pollingInterval = setInterval( poll, 100 );
 				startRecording();
 			} );
-		}
+		};
 
 		panelWindow.stopRecordingData = function() {
 			pollingInterval = clearInterval( pollingInterval );
@@ -169,7 +171,7 @@ function initialize( panel ) {
 				( result, isException ) => log( result, isException )
 			);
 			panelWindow.plotRecording( recordBuffer );
-		}
+		};
 
 		panelWindow.updateSettings = function() {
 
@@ -178,7 +180,7 @@ function initialize( panel ) {
 				settings: settings
 			} );
 
-		}
+		};
 
 		panelWindow.setSettings( settings );
 		panelWindow.updateScriptStatus();
