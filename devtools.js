@@ -178,7 +178,7 @@ function initialize( panel ) {
 			panelWindow.stopRecordingData = function() {
 				recording = false;
 				pollingInterval = clearInterval( pollingInterval );
-				log( `Recording stopped, ${recordBuffer.length} samples taken`, recordBuffer );
+				log( `Recording stopped, ${recordBuffer.length} samples taken` );//, recordBuffer );
 				chrome.devtools.inspectedWindow.eval(
 					`window.__PerfMeterStopRecording();`,
 					( result, isException ) => log( result, isException )
