@@ -645,7 +645,7 @@ Renderer: ${v.renderer}
 			textureCount: textureCount,
 			totalDrawCount: drawCount + instancedDrawCount,
 			hasWebGL: hasWebGL
-		}
+		};
 
 	};
 
