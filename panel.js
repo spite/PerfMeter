@@ -60,12 +60,12 @@ function updateRecordingStatus() {
 		ge( 'recording-progress' ).textContent = `Recording. ${recordingStatus.bufferSize} samples...`;
 		ge( 'start-record-data-button' ).style.display = 'none';
 		ge( 'stop-record-data-button' ).style.display = 'block';
-		ge( 'download-data-button' ).disabled = false;
+		ge( 'download-data-button' ).disabled = true;
 	} else {
 		ge( 'recording-progress' ).textContent = 'Standing by';
 		ge( 'start-record-data-button' ).style.display = 'block';
 		ge( 'stop-record-data-button' ).style.display = 'none';
-		ge( 'download-data-button' ).enabled = true;
+		ge( 'download-data-button' ).disabled = false;
 	}
 
 }
