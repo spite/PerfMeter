@@ -554,7 +554,7 @@ Renderer: ${v.renderer}
 
 		frameTime = getTime() - oTime;
 
-		update( timestamp );
+		update();
 
 		if( recording ) {
 
@@ -649,7 +649,7 @@ Renderer: ${v.renderer}
 
 	};
 
-	var update = function( timestamp ){
+	var update = function(){
 
 		if( contexts.size === 0 ) return;
 
