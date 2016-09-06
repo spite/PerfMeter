@@ -26,8 +26,7 @@
 		"system.cpu",
 		"system.display",
 		"system.memory",
-		"webRequest",
-		"downloads"
+		"webRequest"
 	],
 	"web_accessible_resources": [
 		"canvas-instrument.js",
