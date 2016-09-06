@@ -162,6 +162,7 @@ Renderer: ${v.renderer}
 				disjointTime: 0,
 				drawCount: 0,
 				instancedDrawCount: 0,
+				instanceCount: 0,
 				pointCount: 0,
 				lineCount: 0,
 				triangleCount: 0,
@@ -364,6 +365,7 @@ Renderer: ${v.renderer}
 			res.drawArraysInstancedANGLE = function() {
 
 				ctx.instancedDrawCount++;
+				ctx.instanceCount += arguments[ 3 ];
 				updateDrawCount( gl, ctx, arguments[ 0 ], arguments[ 2 ] );
 				return drawArraysInstancedANGLE.apply( this, arguments );
 
@@ -373,6 +375,7 @@ Renderer: ${v.renderer}
 			res.drawElementsInstancedANGLE = function() {
 
 				ctx.instancedDrawCount++;
+				ctx.instanceCount += arguments[ 4 ];
 				updateDrawCount( gl, ctx, arguments[ 0 ], arguments[ 1 ] );
 				return drawElementsInstancedANGLE.apply( this, arguments );
 
@@ -393,6 +396,7 @@ Renderer: ${v.renderer}
 
 			var ctx = contexts.get( this );
 			ctx.instancedDrawCount ++;
+			ctx.instanceCount += arguments[ 3 ];
 			updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 1 ] );
 			return drawElementsInstanced.apply( this, arguments );
 
@@ -403,6 +407,7 @@ Renderer: ${v.renderer}
 
 			var ctx = contexts.get( this );
 			ctx.instancedDrawCount ++;
+			ctx.instanceCount += arguments[ 4 ];
 			updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 2 ] );
 			return drawArraysInstanced.apply( this, arguments );
 
@@ -590,6 +595,7 @@ Renderer: ${v.renderer}
 			context.useProgramCount = 0;
 			context.drawCount = 0;
 			context.instancedDrawCount = 0;
+			context.instanceCount = 0;
 			context.bindTextureCount = 0;
 			context.JavaScriptTime = 0;
 			context.disjointTime = 0;
@@ -605,6 +611,7 @@ Renderer: ${v.renderer}
 
 		var drawCount = 0;
 		var instancedDrawCount = 0;
+		var instanceCount = 0;
 		var JavaScriptTime = 0;
 		var disjointTime = 0;
 		var useProgramCount = 0;
@@ -628,12 +635,14 @@ Renderer: ${v.renderer}
 			totalTriangles += context.triangles;
 			programCount += context.programCount;
 			textureCount += context.textureCount;
+			instanceCount += context.instanceCount;
 			if( context.type === '3d' ) hasWebGL = true;
 		} );
 
 		return {
 			drawCount: drawCount,
 			instancedDrawCount: instancedDrawCount,
+			instanceCount: instanceCount,
 			JavaScriptTime: JavaScriptTime,
 			disjointTime: disjointTime,
 			useProgramCount: useProgramCount,
@@ -700,7 +709,7 @@ textures: ${frame.textureCount}
 useProgram: ${frame.useProgramCount}
 bindTexture: ${frame.bindTextureCount}
 Draw: ${frame.drawCount}
-Instanced: ${frame.instancedDrawCount}
+Instanced: ${frame.instancedDrawCount} (${frame.instanceCount})
 Total: ${frame.totalDrawCount}
 Points: ${frame.totalPoints}
 Lines: ${frame.totalLines}
