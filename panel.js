@@ -186,4 +186,28 @@ function plotRecording( recordBuffer ) {
 		aggregate_rollover: true
 	} );
 
+	MG.data_graphic( {
+		show_tooltips: false,
+		chart_type: 'line',
+		description: "Draw Calls",
+		brushing: true,
+		data: [ pointsDrawCalls ],
+		full_width: true,
+		height: 180,
+		animate_on_load: true,
+		area: true,
+		linked: false,
+		x_rug: true,
+		y_extended_ticks: true,
+		interpolate: d3.curveCatmullRomOpen, //d3.curveLinear,
+		x_axis: false,
+		x_accessor: 'date',
+		x_rug: true,
+		target: '#drawCalls-graph',
+		legend: [ 'Draw calls' ],
+		legend_target: 'div#custom-color-key',
+		colors: [ 'orange' ],
+		aggregate_rollover: false
+	} );
+
 }
