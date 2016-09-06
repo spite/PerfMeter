@@ -111,26 +111,53 @@ function plotRecording( recordBuffer ) {
 	} );
 
 	MG.data_graphic( {
-		title: "Metrics",
 		show_tooltips: false,
 		chart_type: 'line',
-		description: "FPS, GPU, JS",
+		baselines: [ { value: 0 }, {value: 30, label: '30 FPS'}, {value: 60, label: '60 FPS'}, {value: 90, label: '90 FPS'}],
+		description: "FPS",
 		brushing: true,
-		data: [ pointsFPS, pointsGPU, pointsJS, pointsDrawCalls ],
+		data: [ pointsFPS ],
 		full_width: true,
-		height: 200,
+		height: 180,
 		animate_on_load: true,
-        area: true,
-        y_extended_ticks: true,
-        interpolate: d3.curveCatmullRomOpen, //d3.curveLinear,
+		area: true,
+		linked: false,
+		x_rug: true,
+		//y_extended_ticks: true,
+		interpolate: d3.curveCatmullRomOpen, //d3.curveLinear,
 		x_axis: false,
 		x_accessor: 'date',
 		x_rug: true,
-		target: '#chart_div',
-		legend: ['FPS','GPU','JS', 'Draw calls' ],
-        legend_target: 'div#custom-color-key',
-        colors: ['blue', 'rgb(255,100,43)', '#CCCCFF', '#b70000' ],
-        aggregate_rollover: true
+		target: '#fps-graph',
+		legend: ['FPS' ],
+		legend_target: 'div#custom-color-key',
+		colors: ['blue' ],
+		aggregate_rollover: false
+	} );
+
+	MG.data_graphic( {
+		show_tooltips: false,
+		chart_type: 'line',
+		baselines: [ {value: 0 }, {value: 16.66, label: '16ms'} ],
+		description: "GPU, JS",
+		brushing: true,
+		data: [ pointsGPU, pointsJS ],
+		full_width: true,
+		height: 180,
+		animate_on_load: true,
+		area: true,
+		linked: false,
+		x_rug: true,
+		//y_extended_ticks: true,
+		interpolate: d3.curveCatmullRomOpen, //d3.curveLinear,
+		x_axis: false,
+		x_accessor: 'date',
+		x_rug: true,
+		target: '#time-graph',
+		legend: [ 'GPU','JS' ],
+		legend_target: 'div#custom-color-key',
+		colors: [ 'rgb(255,100,43)', '#b70000' ],
+		aggregate_rollover: true
 	} );
 
 }
