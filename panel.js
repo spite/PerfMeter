@@ -60,10 +60,12 @@ function updateRecordingStatus() {
 		ge( 'recording-progress' ).textContent = `Recording. ${recordingStatus.bufferSize} samples...`;
 		ge( 'start-record-data-button' ).style.display = 'none';
 		ge( 'stop-record-data-button' ).style.display = 'block';
+		ge( 'download-data-button' ).disabled = false;
 	} else {
 		ge( 'recording-progress' ).textContent = 'Standing by';
 		ge( 'start-record-data-button' ).style.display = 'block';
 		ge( 'stop-record-data-button' ).style.display = 'none';
+		ge( 'download-data-button' ).enabled = true;
 	}
 
 }
@@ -96,7 +98,17 @@ ge( 'download-data-button' ).addEventListener( 'click', e => {
 
 	var blob = new Blob( [ JSON.stringify( recordedData ) ],{ type: 'application/json' } );
 	var url = window.URL.createObjectURL( blob );
-	chrome.downloads.download( { url: url, filename: 'data.json' } );
+	var anchor = document.createElement( 'a' );
+	anchor.href = url;
+	anchor.setAttribute( 'download', 'data.json' );
+	anchor.className = "download-js-link";
+	anchor.innerHTML = "downloading...";
+	anchor.style.display = "none";
+	document.body.appendChild(anchor);
+	setTimeout(function() {
+		anchor.click();
+		document.body.removeChild(anchor);
+	}, 1 );
 
 } );
 
