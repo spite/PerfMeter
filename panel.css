@@ -3,7 +3,8 @@ body{ padding: 10px; line-height: 2em;}
 h1{ font-size: 14px; }
 .instrument-status{ display: none; }
 #scriptStatus{ background-color: #FFDA9E; padding: 10px; margin: 10px 0; }
-button{ padding: 4px; cursor: pointer; }
+button{ padding: 4px; cursor: pointer; vertical-align: top; padding-bottom: 5px;}
+button object{ width: 10px; height: 10px; pointer-events: none; margin-right: 4px; line-height: 0; vertical-align: text-bottom; }
 input[type=checkbox]:disabled+label { opacity: .5; }
 .horizontal-bar{
 	display: flex;
@@ -15,3 +16,8 @@ input[type=checkbox]:disabled+label { opacity: .5; }
 	display: flex;
     align-items: flex-start;
 }
+form.disabled{
+	opacity: .5;
+	pointer-events: none;
+}
+input[type=radio]{ margin-right: .5em;}
