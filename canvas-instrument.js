@@ -302,16 +302,17 @@ Renderer: ${v.renderer}
 			}
 			return false;
 		} ).forEach( fn => {
-			var time;
+			var startTime;
 			proto.prototype[ fn ] = _wrap(
 				proto.prototype[ fn ],
 				function _pre() {
-					time = getTime();
+					startTime = getTime();
 				},
 				function _post() {
 					var ctx = contexts.get( this );
-					if( settings.logOperations ) ctx.log.push( fn );
-					ctx.JavaScriptTime += getTime() - time;
+					var endTime = getTime();
+					if( settings.logOperations ) ctx.log.push( [ startTime, endTime, fn ] );
+					ctx.JavaScriptTime += endTime - startTime;
 				}
 			);
 		} );
