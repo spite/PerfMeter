@@ -92,7 +92,21 @@ function onScriptMessage( msg ) {
 
 }
 
+ge( 'download-data-button' ).addEventListener( 'click', e => {
+
+	var blob = new Blob( [ JSON.stringify( recordedData ) ],{ type: 'application/json' } );
+	var url = window.URL.createObjectURL( blob );
+	chrome.downloads.download( { url: url, filename: 'data.json' } );
+
+} );
+
+var recordedData = null;
+
 function plotRecording( recordBuffer ) {
+
+	recordedData = recordBuffer;
+
+	if( recordBuffer.length === 0 ) return;
 
 	var d = Date.now();
 
