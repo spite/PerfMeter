@@ -154,7 +154,7 @@ Renderer: ${v.renderer}
 				ctx: res,
 				type: '2d',
 				queryExt: null,
-				queries: [],
+				queries: new Map(),
 				frames: {},
 				programCount: 0,
 				textureCount: 0,
@@ -436,10 +436,10 @@ Renderer: ${v.renderer}
 	var lastTime = getTime();
 	var frameId = 0;
 	var framesQueue = {};
+	var disjointFrames = new Map();
 
 	var framerate = 0;
 	var JavaScriptTime = 0;
-	var disjointFrames = {};
 	var frameTime = 0;
 	var rAFCount = 0;
 
@@ -456,56 +456,66 @@ Renderer: ${v.renderer}
 		oTime = getTime();
 		rAFCount = rAFs.length;
 
-		disjointFrames[ frameId ] = { time: 0, queries: 0 };
+		disjointFrames.forEach( frame => {
 
-		var id = 0;
+			frame.queries.forEach( q => {
+
+				var query = q.query;
+				var queryExt = q.context.queryExt;
+				var available = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_AVAILABLE_EXT );
+				var disjoint = q.context.ctx.getParameter( queryExt.GPU_DISJOINT_EXT );
+
+				if( available === null && disjoint === null ) { // Android?
+					q.resolved = true;
+				}
+
+				if( available && !disjoint ) {
+					q.time = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_EXT );
+					q.resolved = true;
+				}
+
+			} );
+
+		} );
+
+		disjointFrames.forEach( frame => {
+
+			var time = 0;
+			var resolved = true;
+
+			frame.queries.forEach( q => {
+				if( q.resolved ) {
+					time += q.time;
+					q.context.disjointTime += q.time;
+				}
+				else resolved = false;
+			} );
+
+			if( resolved ) {
+				if( recording && framesQueue[ frame.frameId ] ) {
+					framesQueue[ frame.frameId ].disjointTime = time;
+					framesQueue[ frame.frameId ].completed = true;
+				}
+				disjointFrames.delete( frame.frameId );
+			}
+
+		} );
+
+		disjointFrames.set( frameId, { frameId: frameId, queries: [] } );
+
 		contexts.forEach( function _contexts( context ) {
 
 			var queryExt = context.queryExt;
 
 			if( queryExt ) {
 
-				var gl = context.ctx;
-
-				context.queries.forEach( function _queries( q, i ) {
-
-					var query = q.query;
-					var available = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_AVAILABLE_EXT );
-					var disjoint = gl.getParameter( queryExt.GPU_DISJOINT_EXT );
-
-					if( available === null && disjoint === null ) { // Android?
-						context.queries.splice( i, 1 );
-						disjointFrames[ q.frameId ].queries--;
-					}
-
-					if( available && !disjoint ) {
-						var timeElapsed = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_EXT );
-						context.queries.splice( i, 1 );
-						disjointFrames[ q.frameId ].time += timeElapsed;
-						disjointFrames[ q.frameId ].queries--;
-					}
-
-					if( disjointFrames[ q.frameId ].queries === 0 ) {
-						var t = disjointFrames[ q.frameId ].time;
-						context.disjointTime += t;
-						disjointFrames[ q.frameId ] = null;
-						delete disjointFrames[ q.frameId ];
-						if( recording && framesQueue[ q.frameId ] ) {
-							framesQueue[ q.frameId ].contexts.get( context ).disjointTime += t;
-							framesQueue[ q.frameId ].completed = true;
-						}
-					}
-
-				} );
-
 				var query = queryExt.createQueryEXT();
 				queryExt.beginQueryEXT( queryExt.TIME_ELAPSED_EXT, query );
-				context.queries.push( { frameId: frameId, query: query } );
-				disjointFrames[ frameId ].queries++;
-
+				var f = disjointFrames.get( frameId );
+				if( f ) {
+					f.queries.push( { context: context, query: query, resolved: false, time: 0 } );
+				}
 			}
-
-			id++;
 
 		} );
 
