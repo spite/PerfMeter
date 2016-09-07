@@ -1,3 +1,5 @@
+"use strict";
+
 function log() {
 
 	console.log.apply(
@@ -14,7 +16,7 @@ function fixSettings( settings ) {
 
 	if( settings === undefined ) return defaultSettings;
 
-	var res = {}
+	var res = {};
 
 	Object.keys( defaultSettings ).forEach( f => {
 
