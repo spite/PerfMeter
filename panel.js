@@ -29,6 +29,14 @@ ge( 'autoinstrument' ).addEventListener( 'change', e => {
 
 } );
 
+ge( 'log-calls' ).addEventListener( 'change', e => {
+
+	window.settings.log = e.target.checked;
+	updateSettings();
+	e.preventDefault();
+
+} );
+
 ge( 'show-gpuinfo' ).addEventListener( 'change', e => {
 
 	window.settings.showGPUInfo = e.target.checked;
@@ -43,6 +51,7 @@ function setSettings( settings ) {
 
 	ge( 'autoinstrument' ).checked = settings.autoinstrument;
 	ge( 'show-gpuinfo' ).checked = settings.showGPUInfo;
+	ge( 'log-calls' ).checked = settings.log;
 
 }
 
@@ -125,6 +134,7 @@ function plotRecording( recordBuffer ) {
 	var pointsGPU = [];
 	var pointsFPS = [];
 	var pointsJS = [];
+	var pointsCanvasJS = [];
 	var pointsDrawCalls = [];
 
 	var s = 2000;
@@ -133,6 +143,7 @@ function plotRecording( recordBuffer ) {
 		pointsFPS.push( { date: new Date( d + rec.timestamp * s ), value: rec.framerate } );
 		pointsGPU.push( { date: new Date( d + rec.timestamp * s ), value: rec.disjointTime / ( 1000 * 1000 ) } );
 		pointsJS.push( { date: new Date( d + rec.timestamp * s ), value: rec.frameTime } );
+		pointsCanvasJS.push( { date: new Date( d + rec.timestamp * s ), value: rec.JavaScriptTime } );
 		pointsDrawCalls.push( { date: new Date( d + rec.timestamp * s ), value: rec.drawCount } );
 	} );
 
@@ -165,9 +176,9 @@ function plotRecording( recordBuffer ) {
 		show_tooltips: false,
 		chart_type: 'line',
 		baselines: [ {value: 0 }, {value: 16.66, label: '16ms'} ],
-		description: "GPU, JS",
+		description: "GPU, JS, Canvas JS",
 		brushing: true,
-		data: [ pointsGPU, pointsJS ],
+		data: [ pointsGPU, pointsJS, pointsCanvasJS ],
 		full_width: true,
 		height: 180,
 		animate_on_load: true,
@@ -182,7 +193,7 @@ function plotRecording( recordBuffer ) {
 		target: '#time-graph',
 		legend: [ 'GPU','JS' ],
 		legend_target: 'div#custom-color-key',
-		colors: [ 'rgb(255,100,43)', '#b70000' ],
+		colors: [ 'rgb(255,100,43)', '#b70000', 'green' ],
 		aggregate_rollover: true
 	} );
 

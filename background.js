@@ -9,7 +9,7 @@ var script = '';
 var defaultSettings = {
 
 	showGPUInfo: false,
-	logOperations: !false,
+	log: false,
 	autoinstrument: true
 
 };

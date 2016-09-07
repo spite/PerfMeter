@@ -312,8 +312,9 @@ Renderer: ${v.renderer}
 				function _post() {
 					var ctx = contexts.get( this );
 					var endTime = getTime();
-					if( settings.logOperations ) ctx.log.push( [ startTime, endTime, fn ] );
+					if( settings.log ) ctx.log.push( [ startTime, endTime, fn, endTime - startTime ] );
 					ctx.JavaScriptTime += endTime - startTime;
+					//log( fn, ctx.JavaScriptTime );
 				}
 			);
 		} );
@@ -623,19 +624,26 @@ Renderer: ${v.renderer}
 		var programCount = 0;
 		var textureCount = 0;
 
+		var canvasLog = [];
+
 		contexts.forEach( function( context ) {
-			drawCount += context.drawCount;
+			drawCount          += context.drawCount;
 			instancedDrawCount += context.instancedDrawCount;
-			JavaScriptTime += context.JavaScriptTime;
-			disjointTime += context.disjointTime;
-			useProgramCount += context.useProgramCount;
-			bindTextureCount += context.bindTextureCount;
-			totalPoints += context.points;
-			totalLines += context.lines;
-			totalTriangles += context.triangles;
-			programCount += context.programCount;
-			textureCount += context.textureCount;
-			instanceCount += context.instanceCount;
+			JavaScriptTime     += context.JavaScriptTime;
+			disjointTime       += context.disjointTime;
+			useProgramCount    += context.useProgramCount;
+			bindTextureCount   += context.bindTextureCount;
+			totalPoints        += context.points;
+			totalLines         += context.lines;
+			totalTriangles     += context.triangles;
+			programCount       += context.programCount;
+			textureCount       += context.textureCount;
+			instanceCount      += context.instanceCount;
+			canvasLog.push( {
+				disjointTime: context.disjointTime,
+				log: context.log,
+				JavaScriptTime: context.JavaScriptTime
+			} );
 			if( context.type === '3d' ) hasWebGL = true;
 		} );
 
@@ -653,7 +661,8 @@ Renderer: ${v.renderer}
 			programCount: programCount,
 			textureCount: textureCount,
 			totalDrawCount: drawCount + instancedDrawCount,
-			hasWebGL: hasWebGL
+			hasWebGL: hasWebGL,
+			log: canvasLog
 		};
 
 	};
@@ -680,7 +689,8 @@ Renderer: ${v.renderer}
 							frameTime: frame.frameTime,
 							JavaScriptTime: res.JavaScriptTime,
 							disjointTime: res.disjointTime,
-							drawCount: res.drawCount
+							drawCount: res.drawCount,
+							log: res.log
 						}
 
 					} );
@@ -695,6 +705,9 @@ Renderer: ${v.renderer}
 		}
 
 		var frame = compileFrame( contexts );
+
+		//console.log( frameTime.toFixed(2), JavaScriptTime.toFixed(2) )
+		//if( frame.JavaScriptTime > frameTime ) debugger;
 
 		var general = `FPS: ${framerate.toFixed( 2 )}
 Frame JS Time: ${frameTime.toFixed(2)}
