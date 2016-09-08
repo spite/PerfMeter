@@ -113,17 +113,20 @@
 
 			if( i === 0 ) {
 				path.moveTo( vx, vy );
+				ovx = vx;
+				ovy = vy;
 			} else {
-				if( ovx !== vx ) {
+				if( vx > ovx + 2 ) {
 					var cpx = ovx + ( vx - ovx ) * .5;
 					var cpy = ( vy < ovy ) ? vy : ovy;
+					var cpy2 = ( vy < ovy ) ? ovy : vy;
 					//path.lineTo( adjustX( ~~v.x ), adjustY( v.y ) );
-					path.quadraticCurveTo( cpx, cpy, vx, vy );
+					//path.quadraticCurveTo( cpx, cpy, vx, vy );
+					path.bezierCurveTo( cpx, cpy, cpx, cpy2, vx, vy );
+					ovx = vx;
+					ovy = vy;
 				}
 			}
-
-			ovx = vx;
-			ovy = vy;
 
 		} );
 
