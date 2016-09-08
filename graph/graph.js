@@ -196,7 +196,7 @@
 			} else {
 				acc += vy;
 				samples++;
-				if( vx > ovx + 2 ) {
+				//if( vx > ovx ) {
 					vy = this.paddingTop + acc / samples;
 					acc = 0;
 					samples = 0;
@@ -207,7 +207,6 @@
 					path.bezierCurveTo( cpx, cpy1, cpx, cpy2, vx, vy );
 					ovx = vx;
 					ovy = vy;
-				}
 			}
 
 		} );
