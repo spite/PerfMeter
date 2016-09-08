@@ -38,12 +38,42 @@
 		this.dpr = window.devicePixelRatio;
 		this.properties.target.appendChild( this.canvas );
 
+		this.label = document.createElement( 'div' );
+		this.label.style.position = 'absolute';
+		this.label.style.pointerEvents = 'none';
+		this.properties.target.appendChild( this.label );
+
 		this.resize();
 
 		var debouncedResize = debounce( this.resize.bind( this ), 100 );
 		window.addEventListener( 'resize', function( e  ){
 			debouncedResize();
 		}.bind( this ) );
+
+		this.canvas.addEventListener( 'mouseover', e => {
+			this.updateLabelPosition( e.pageX, e.pageY );
+			this.label.style.display = 'block';
+		} );
+
+		this.canvas.addEventListener( 'mouseout', e => {
+			this.label.style.display = 'none';
+		} );
+
+		this.canvas.addEventListener( 'mousemove', e => {
+			var res = this.updateLabelPosition( e.pageX, e.pageY );
+			var pos = res.x * ( this.end - this.start ) / res.width + this.start;
+			this.label.textContent = ( this.data.find( v => v.x >= pos ) ).y;
+		})
+
+	}
+
+	Graph.prototype.updateLabelPosition = function( x, y ) {
+
+		var rectObject = this.canvas.getBoundingClientRect();
+		var x = x - rectObject.left;
+		var y = y - rectObject.top;
+		this.label.style.transform = `translate3d(${x}px,0,0)`;
+		return { x: x, width: rectObject.width };
 
 	}
 
@@ -62,7 +92,7 @@
 
 		this.start = this.data[ 0 ].x;
 		this.end = this.data[ this.data.length - 1 ].x;
-		this.end *= 1;
+		this.end *= 1.;
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
@@ -97,7 +127,7 @@
 
 		var paddingTop = 5;
 
-		var adjustX = createAdjustFunction( this.start, this.end, this.canvas.width );
+		this.adjustX = createAdjustFunction( this.start, this.end, this.canvas.width );
 		var adjustY = createAdjustFunction( this.max, 0, this.canvas.height - paddingTop );
 
 		this.ctx.fillStyle = '#efefef'
@@ -112,7 +142,7 @@
 
 		this.data.forEach( ( v, i ) => {
 
-			var vx = ~~( adjustX( v.x ) );
+			var vx = ~~( this.adjustX( v.x ) );
 			var vy = adjustY( v.y );
 
 			if( i === 0 ) {
@@ -129,7 +159,7 @@
 					var cpx = ovx + ( vx - ovx ) * .5;
 					var cpy1 = ( vy < ovy ) ? vy : ovy;
 					var cpy2 = ( vy < ovy ) ? ovy : vy;
-					//path.lineTo( adjustX( ~~v.x ), adjustY( v.y ) );
+					//path.lineTo( this.adjustX( ~~v.x ), adjustY( v.y ) );
 					path.bezierCurveTo( cpx, cpy1, cpx, cpy2, vx, vy );
 					ovx = vx;
 					ovy = vy;
