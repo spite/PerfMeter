@@ -107,23 +107,30 @@
 
 		var ovx = 0;
 		var ovy = 0;
+		var acc = 0;
+		var samples = 0;
+
 		this.data.forEach( ( v, i ) => {
 
 			var vx = ~~( adjustX( v.x ) );
-			var vy = paddingTop + adjustY( v.y );
+			var vy = adjustY( v.y );
 
 			if( i === 0 ) {
 				path.moveTo( vx, vy );
 				ovx = vx;
 				ovy = vy;
 			} else {
+				acc += vy;
+				samples++;
 				if( vx > ovx + 2 ) {
+					vy = paddingTop + acc / samples;
+					acc = 0;
+					samples = 0;
 					var cpx = ovx + ( vx - ovx ) * .5;
-					var cpy = ( vy < ovy ) ? vy : ovy;
+					var cpy1 = ( vy < ovy ) ? vy : ovy;
 					var cpy2 = ( vy < ovy ) ? ovy : vy;
 					//path.lineTo( adjustX( ~~v.x ), adjustY( v.y ) );
-					//path.quadraticCurveTo( cpx, cpy, vx, vy );
-					path.bezierCurveTo( cpx, cpy, cpx, cpy2, vx, vy );
+					path.bezierCurveTo( cpx, cpy1, cpx, cpy2, vx, vy );
 					ovx = vx;
 					ovy = vy;
 				}
