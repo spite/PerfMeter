@@ -2,6 +2,28 @@
 
 	"use strict";
 
+	function throttle(fn, threshold, scope) {
+	threshold || (threshold = 250);
+	var last,
+	deferTimer;
+	return function () {
+		var context = scope || this;
+
+		var now = +new Date,
+		args = arguments;
+		if (last && now < last + threshold) {
+			clearTimeout(deferTimer);
+			deferTimer = setTimeout(function () {
+				last = now;
+				fn.apply(context, args);
+			}, threshold);
+		} else {
+			last = now;
+			fn.apply(context, args);
+		}
+	};
+}
+
 	function debounce(fn, delay) {
 		var timer = null;
 		return function () {
@@ -61,8 +83,11 @@
 		this.linkIn = this.showLabel;
 		this.linkOut = this.showLabel;
 		this.linkOver = this.updatePoint;
+		this.linkZoom = this.updateZoom;
 
 		this.resize();
+
+		this.zoom = 1;
 
 		var debouncedResize = debounce( this.resize.bind( this ), 100 );
 		window.addEventListener( 'resize', function( e  ){
@@ -90,17 +115,33 @@
 
 		})
 
+		var debouncedLinkZoom = throttle( z => this.linkZoom( z ), 20 );
+
+		this.canvas.addEventListener( 'wheel', e => {
+
+			debouncedLinkZoom( this.zoom + ( .01 * e.deltaY ) );
+			e.preventDefault();
+
+		} );
+
 	}
 
 	Graph.link = function( graphs ) {
-
-		var fn =
 
 		graphs.forEach( g => {
 			g.linkIn = x => { graphs.forEach( g => g.showLabel( true ) ); };
 			g.linkOut = x => { graphs.forEach( g => g.showLabel( false ) ); };
 			g.linkOver = x => { graphs.forEach( g => g.updatePoint( x ) ); };
+			g.linkZoom = z => { graphs.forEach( g => g.updateZoom( z ) ); };
 		} )
+
+	}
+
+	Graph.prototype.updateZoom = function( zoom ) {
+
+		this.zoom = zoom;
+		if( this.zoom > 1 ) this.zoom = 1;
+		this.update();
 
 	}
 
@@ -116,6 +157,8 @@
 	}
 
 	Graph.prototype.updatePoint = function( x ) {
+
+		if( this.data.length === 0 ) return;
 
 		var res = this.updateLabelPosition( x );
 		var pos = res.x * ( this.end - this.start ) / res.width + this.start;
@@ -177,10 +220,17 @@
 	Graph.prototype.set = function( data ) {
 
 		this.data = data;
+		this.update();
+
+	}
+
+	Graph.prototype.update = function() {
+
+		if( this.zoom > 1 ) this.zoom = 1;
 
 		this.start = this.data[ 0 ].x;
 		this.end = this.data[ this.data.length - 1 ].x;
-		this.end *= 1.;
+		this.end *= this.zoom;
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
