@@ -62,6 +62,7 @@
 
 		this.start = this.data[ 0 ].x;
 		this.end = this.data[ this.data.length - 1 ].x;
+		this.end *= 1;
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
