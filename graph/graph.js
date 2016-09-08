@@ -207,6 +207,7 @@
 					path.bezierCurveTo( cpx, cpy1, cpx, cpy2, vx, vy );
 					ovx = vx;
 					ovy = vy;
+				//}
 			}
 
 		} );
