@@ -38,4 +38,74 @@ text-shadow: 0 1px #fff;
 </div>
 </body>
 <script src="graph.js"></script>
+<script>
+
+// baseline_range: n
+// baselines: [ a, b, c... ]
+
+function formatNumber( value, sizes, decimals ) {
+   if(value == 0) return '0';
+   var k = 1000; // or 1024 for binary
+   var dm = decimals || 2;
+   var i = Math.floor(Math.log(value) / Math.log(k));
+   return parseFloat((value / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+var timeSizes = ['ns', 'µs', 'ms', 's' ];
+var callSizes = [ '', 'K', 'M', 'G' ];
+
+var g1 = new Graph( {
+	title: 'Framerate',
+	target: document.getElementById( 'framerate-div' ),
+	color: '#d7f0d1',
+	baselines: [ 30, 60, 90 ],
+	decorator: v => `${v.toFixed( 2 )} FPS`
+} );
+
+var g2 = new Graph( {
+	title: 'GPU time',
+	target: document.getElementById( 'gpu-div' ),
+	color: '#f0c457',
+	baselines: [ 16666666 ],
+	decorator: v => `${formatNumber(v,timeSizes,2)}`
+} );
+
+var g3 = new Graph( {
+	title: 'JavaScript time',
+	target: document.getElementById( 'js-div' ),
+	color: '#9b7fe6',
+	baselines: [ 16 ],
+	decorator: v => `${formatNumber(v*1000*1000,timeSizes,2)}`
+} );
+
+var g4 = new Graph( {
+	title: 'Draw calls',
+	target: document.getElementById( 'drawcalls-div' ),
+	color: '#9dc0ed',
+	baseline_range: 200,
+	decorator: v => `${formatNumber(v,callSizes,3)}`
+} );
+
+Graph.link( [ g1, g2, g3, g4 ] );
+
+fetch( 'dennis-video.json' )
+	.then( response => response.json() )
+	.then( data => plot( data ) );
+
+function plot( data ){
+
+	var points = data.map( v => { return{ x: v.timestamp, y: v.framerate } } );
+	g1.set( points );
+
+	var points2 = data.map( v => { return{ x: v.timestamp, y: v.disjointTime } } );
+	g2.set( points2 );
+
+	var points3 = data.map( v => { return{ x: v.timestamp, y: v.JavaScriptTime } } );
+	g3.set( points3 );
+
+	var points4 = data.map( v => { return{ x: v.timestamp, y: v.drawCount } } );
+	g4.set( points4 );
+
+}
+</script>
 </html>
