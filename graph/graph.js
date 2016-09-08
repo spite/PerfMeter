@@ -22,7 +22,7 @@
 		this.data = [];
 		this.start = 0;
 		this.end = 0;
-		this.paddingTop = 5;
+		this.paddingTop = 2;
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
