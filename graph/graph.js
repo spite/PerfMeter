@@ -235,9 +235,12 @@
 		if( this.zoom > 1 ) this.zoom = 1;
 		if( this.zoom < .1 ) this.zoom = .1;
 
-		var w = this.data[ this.data.length - 1 ].x;
-		this.start = this.pivot * w - this.pivot * this.zoom * w;
-		this.end = ( this.pivot + ( 1 - this.pivot ) * this.zoom ) * w;
+		var first = this.data[ 0 ].x;
+		var last = this.data[ this.data.length - 1 ].x;
+		var w = last - first;
+		this.start = first + this.pivot * w - this.pivot * this.zoom * w;
+		this.end = first + ( this.pivot + ( 1 - this.pivot ) * this.zoom ) * w;
+		console.log( this.zoom,this.start, this.end );
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
