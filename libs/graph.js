@@ -47,6 +47,7 @@
 		this.end = 0;
 		this.paddingTop = 2;
 		this.pivot = 0;
+		this.lastPoint = 0;
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
@@ -157,6 +158,9 @@
 
 	Graph.prototype.updatePoint = function( x ) {
 
+		if( x === undefined ) x = this.lastPoint;
+		this.lastPoint = x;
+
 		if( this.data.length === 0 ) return;
 
 		var res = this.updateLabelPosition( x );
@@ -234,7 +238,6 @@
 		var w = this.data[ this.data.length - 1 ].x;
 		this.start = this.pivot * w - this.pivot * this.zoom * w;
 		this.end = ( this.pivot + ( 1 - this.pivot ) * this.zoom ) * w;
-		console.log( this.pivot, this.start, this.end, this.zoom );
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
@@ -252,6 +255,7 @@
 		}
 
 		this.refresh();
+		this.updatePoint();
 
 	}
 
