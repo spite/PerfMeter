@@ -107,7 +107,13 @@
 		var canvasRect = this.canvas.getBoundingClientRect();
 		var x = x - canvasRect.left;
 		var y = y - canvasRect.top;
-		this.label.style.transform = `translate3d(${x}px,0,0)`;
+		if( x < .5 * this.canvas.clientWidth ) {
+			this.label.classList.remove( 'flip' );
+			this.label.style.transform = `translate3d(${x}px,0,0)`;
+		} else {
+			this.label.classList.add( 'flip' );
+			this.label.style.transform = `translate3d(${-(this.canvas.clientWidth-x)}px,0,0)`;
+		}
 		return { x: x, width: canvasRect.width };
 
 	}
