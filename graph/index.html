@@ -21,20 +21,20 @@ bottom: 0;
 margin: 0;
 opacity: 1;
 transition: opacity 150ms ease-out;
-		}
-		.flip{ right: 0; }
-		.hidden{ opacity: 0; transition: opacity 350ms ease-out; }
+text-shadow: 0 1px #fff;
+}
+.graphs .flip{ right: 0; }
+.graphs .hidden{ opacity: 0; transition: opacity 350ms ease-out; }
+.graphs div h1{ position: absolute; top: 0; padding: 5px; font-size: 11px; line-height: 1em; opacity: .5; pointer-events: none; text-shadow: 0 1px #fff;}
 	</style>
 </head>
 <body>
-<h2>Framerate</h2>
-<div id="framerate-div"></div>
-<h2>GPU Time</h2>
-<div id="gpu-div"></div>
-<h2>JavaScript Time</h2>
-<div id="js-div"></div>
-<h2>Draw Calls</h2>
-<div id="drawcalls-div"></div>
+<div class="graphs">
+	<div id="framerate-div"></div>
+	<div id="gpu-div"></div>
+	<div id="js-div"></div>
+	<div id="drawcalls-div"></div>
+</div>
 </body>
 <script src="graph.js"></script>
 </html>

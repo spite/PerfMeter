@@ -39,6 +39,10 @@
 		this.dpr = window.devicePixelRatio;
 		this.properties.target.appendChild( this.canvas );
 
+		this.title = document.createElement( 'h1' );
+		this.title.textContent = this.properties.title;
+		this.properties.target.appendChild( this.title );
+
 		this.label = document.createElement( 'div' );
 		this.label.className = 'label hidden';
 		this.properties.target.appendChild( this.label );
@@ -54,6 +58,10 @@
 		this.overlayCtx = this.overlayCanvas.getContext( '2d' );
 		this.properties.target.appendChild( this.overlayCanvas );
 
+		this.linkIn = this.showLabel;
+		this.linkOut = this.showLabel;
+		this.linkOver = this.updatePoint;
+
 		this.resize();
 
 		var debouncedResize = debounce( this.resize.bind( this ), 100 );
@@ -62,60 +70,93 @@
 		}.bind( this ) );
 
 		this.canvas.addEventListener( 'mouseover', e => {
-			this.updateLabelPosition( e.pageX, e.pageY );
-			this.label.classList.remove( 'hidden' );
+
+			this.linkIn( e.pageX );
+			this.linkOver( e.pageX );
+
 		} );
 
 		this.canvas.addEventListener( 'mouseout', e => {
-			this.label.classList.add( 'hidden' );
-			this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
+
+			this.linkOut();
+
 		} );
 
 		this.canvas.addEventListener( 'mousemove', e => {
 
 			if( this.data.length === 0 ) return;
 
-			var res = this.updateLabelPosition( e.pageX, e.pageY );
-			var pos = res.x * ( this.end - this.start ) / res.width + this.start;
-			var y = ( this.data.find( v => v.x >= pos ) ).y;
-			this.label.textContent = this.decorator( y );
-
-			var x = res.x * this.dpr;
-			var y = this.paddingTop + this.adjustY( y );
-
-			this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
-			this.overlayCtx.globalCompositeOperation = 'color-burn';
-			this.overlayCtx.strokeStyle = '#000000'
-			this.overlayCtx.globalAlpha = .5;
-			this.overlayCtx.lineWidth = 2;
-
-			this.overlayCtx.setLineDash( [] )
-			this.overlayCtx.beginPath();
-			this.overlayCtx.arc( x, y, 4, 0, 2 * Math.PI );
-			this.overlayCtx.stroke();
-
-			this.overlayCtx.setLineDash( [ 2, 4 ] )
-			this.overlayCtx.beginPath();
-			this.overlayCtx.moveTo( x, this.overlayCanvas.height );
-			this.overlayCtx.lineTo( x, y + 3 );
-			this.overlayCtx.stroke();
+			this.linkOver( e.pageX );
 
 		})
 
 	}
 
-	Graph.prototype.updateLabelPosition = function( x, y ) {
+	Graph.link = function( graphs ) {
+
+		var fn =
+
+		graphs.forEach( g => {
+			g.linkIn = x => { graphs.forEach( g => g.showLabel( true ) ); };
+			g.linkOut = x => { graphs.forEach( g => g.showLabel( false ) ); };
+			g.linkOver = x => { graphs.forEach( g => g.updatePoint( x ) ); };
+		} )
+
+	}
+
+	Graph.prototype.showLabel = function( show ) {
+
+		if( show ) {
+			this.label.classList.remove( 'hidden' );
+		} else {
+			this.label.classList.add( 'hidden' );
+			this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
+		}
+
+	}
+
+	Graph.prototype.updatePoint = function( x ) {
+
+		var res = this.updateLabelPosition( x );
+		var pos = res.x * ( this.end - this.start ) / res.width + this.start;
+		var y = ( this.data.find( v => v.x >= pos ) ).y;
+		this.label.textContent = this.decorator( y );
+
+		var x = res.x * this.dpr;
+		var y = this.paddingTop + this.adjustY( y );
+
+		this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
+		this.overlayCtx.globalCompositeOperation = 'color-burn';
+		this.overlayCtx.strokeStyle = '#000000'
+		this.overlayCtx.globalAlpha = .5;
+		this.overlayCtx.lineWidth = 2;
+
+		this.overlayCtx.setLineDash( [] )
+		this.overlayCtx.beginPath();
+		this.overlayCtx.arc( x, y, 4, 0, 2 * Math.PI );
+		this.overlayCtx.stroke();
+
+		this.overlayCtx.setLineDash( [ 2, 4 ] )
+		this.overlayCtx.beginPath();
+		this.overlayCtx.moveTo( x, this.overlayCanvas.height );
+		this.overlayCtx.lineTo( x, y + 3 );
+		this.overlayCtx.stroke();
+
+	}
+
+	Graph.prototype.updateLabelPosition = function( x ) {
 
 		var divRect = this.canvas.getBoundingClientRect();
 		var canvasRect = this.canvas.getBoundingClientRect();
 		var x = x - canvasRect.left;
-		var y = y - canvasRect.top;
 		if( x < .5 * this.canvas.clientWidth ) {
 			this.label.classList.remove( 'flip' );
 			this.label.style.transform = `translate3d(${x}px,0,0)`;
+			this.title.classList.add( 'flip' );
 		} else {
 			this.label.classList.add( 'flip' );
 			this.label.style.transform = `translate3d(${-(this.canvas.clientWidth-x)}px,0,0)`;
+			this.title.classList.remove( 'flip' );
 		}
 		return { x: x, width: canvasRect.width };
 
@@ -281,7 +322,8 @@ function formatNumber( value, sizes, decimals ) {
 var timeSizes = ['ns', 'us', 'ms', 's' ];
 var callSizes = [ '', 'K', 'M', 'G' ];
 
-var g = new Graph( {
+var g1 = new Graph( {
+	title: 'Framerate',
 	target: document.getElementById( 'framerate-div' ),
 	color: '#d7f0d1',
 	baselines: [ 30, 60, 90 ],
@@ -289,6 +331,7 @@ var g = new Graph( {
 } );
 
 var g2 = new Graph( {
+	title: 'GPU time',
 	target: document.getElementById( 'gpu-div' ),
 	color: '#f0c457',
 	baselines: [ 16666666 ],
@@ -296,6 +339,7 @@ var g2 = new Graph( {
 } );
 
 var g3 = new Graph( {
+	title: 'JavaScript time',
 	target: document.getElementById( 'js-div' ),
 	color: '#9b7fe6',
 	baselines: [ 16 ],
@@ -303,20 +347,23 @@ var g3 = new Graph( {
 } );
 
 var g4 = new Graph( {
+	title: 'Draw calls',
 	target: document.getElementById( 'drawcalls-div' ),
 	color: '#9dc0ed',
 	baseline_range: 200,
 	decorator: v => `${formatNumber(v,callSizes,3)}`
 } );
 
-fetch( 'sample.json' )
+Graph.link( [ g1, g2, g3, g4 ] );
+
+fetch( 'rome.json' )
 	.then( response => response.json() )
 	.then( data => plot( data ) );
 
 function plot( data ){
 
 	var points = data.map( v => { return{ x: v.timestamp, y: v.framerate } } );
-	g.set( points );
+	g1.set( points );
 
 	var points2 = data.map( v => { return{ x: v.timestamp, y: v.disjointTime } } );
 	g2.set( points2 );
