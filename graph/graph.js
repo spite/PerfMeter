@@ -2,6 +2,17 @@
 
 	"use strict";
 
+	function debounce(fn, delay) {
+		var timer = null;
+		return function () {
+			var context = this, args = arguments;
+			clearTimeout(timer);
+			timer = setTimeout(function () {
+				fn.apply(context, args);
+			}, delay);
+		};
+	}
+
 	function Graph( properties ) {
 
 		this.properties = properties;
@@ -29,8 +40,9 @@
 
 		this.resize();
 
+		var debouncedResize = debounce( this.resize.bind( this ), 100 );
 		window.addEventListener( 'resize', function( e  ){
-			this.resize();
+			debouncedResize();
 		}.bind( this ) );
 
 	}
