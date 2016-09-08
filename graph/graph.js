@@ -312,14 +312,14 @@
 // baselines: [ a, b, c... ]
 
 function formatNumber( value, sizes, decimals ) {
-   if(value == 0) return '0 Byte';
+   if(value == 0) return '0';
    var k = 1000; // or 1024 for binary
    var dm = decimals || 2;
    var i = Math.floor(Math.log(value) / Math.log(k));
    return parseFloat((value / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
-var timeSizes = ['ns', 'us', 'ms', 's' ];
+var timeSizes = ['ns', 'µs', 'ms', 's' ];
 var callSizes = [ '', 'K', 'M', 'G' ];
 
 var g1 = new Graph( {
