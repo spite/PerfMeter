@@ -21,3 +21,5 @@ form.disabled{
 	pointer-events: none;
 }
 input[type=radio]{ margin-right: .5em;}
+.graphs h2{ margin: 10px 10px 0 10px; font-size: 11px;}
+.graphs div{ height: 30px; position: relative; margin: 5px 10px 10px 10px;}

@@ -4,11 +4,6 @@
 	<meta charset="utf-8">
 	<title>PerfMeter Panel</title>
 	<link rel="stylesheet" type="text/css" href="panel.css" />
-	<script type="text/javascript" src="libs/d3.v4.min.js"></script>
-	<script type="text/javascript" src="libs/metricsgraphics.min.js"></script>
-	<link rel="stylesheet" type="text/css" href="libs/metricsgraphics.css" />
-	<script src="libs/mg_line_brushing.js"></script>
-	<link rel="stylesheet" type="text/css" href="libs/mg_line_brushing.css" />
 </head>
 <body>
 <h1>PerfMeter</h1>
@@ -25,10 +20,15 @@
 	<li><button id="download-data-button" disabled ><object type="image/svg+xml" data="assets/download.svg" class="logo"></object>Download</button></li>
 </ul>
 <p id="recording-progress" ></p>
-<div>
-	<div id="fps-graph"></div>
-	<div id="time-graph"></div>
-	<div id="drawCalls-graph"></div>
+<div class="graphs">
+	<h2>Framerate</h2>
+	<div id="framerate-div"></div>
+	<h2>GPU Time</h2>
+	<div id="gpu-div"></div>
+	<h2>JavaScript Time</h2>
+	<div id="js-div"></div>
+	<h2>Draw Calls</h2>
+	<div id="drawcalls-div"></div>
 </div>
 <h2>Settings</h2>
 <form>
@@ -50,6 +50,7 @@
 	<h3>Extension</h3>
 	<p><input type="checkbox" id="autoinstrument" /> <label for="autoinstrument" >Auto-instrument (will automatically be injected with DevTools open)</label></p>
 </form>
+<script src="libs/graph.js"></script>
 <script src="utils.js"></script>
 <script src="panel.js"></script>
 </body>

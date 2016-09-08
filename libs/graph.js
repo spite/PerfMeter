@@ -1,0 +1,170 @@
+(function() {
+
+	"use strict";
+
+	function Graph( properties ) {
+
+		this.properties = properties;
+
+		this.properties.baselines = this.properties.baselines || [];
+
+		this.data = [];
+		this.start = 0;
+		this.end = 0;
+		this.height = 30;
+
+		this.max = 0;
+		this.min = Number.MAX_VALUE;
+
+		this.canvas = document.createElement( 'canvas' );
+		this.canvas.style.width = '100%';
+		this.canvas.style.height = '100%';
+		this.canvas.style.position = 'absolute';
+		this.canvas.style.left = 0;
+		this.canvas.style.top = 0;
+
+		this.ctx = this.canvas.getContext( '2d' );
+		this.dpr = window.devicePixelRatio;
+		this.properties.target.appendChild( this.canvas );
+
+		this.resize();
+
+		window.addEventListener( 'resize', function( e  ){
+			this.resize();
+		}.bind( this ) );
+
+	}
+
+	Graph.prototype.resize = function() {
+
+		this.canvas.width = this.properties.target.clientWidth * this.dpr;
+		this.canvas.height = this.properties.target.clientHeight * this.dpr;
+
+		this.refresh();
+
+	}
+
+	Graph.prototype.set = function( data ) {
+
+		this.data = data;
+
+		this.start = this.data[ 0 ].x;
+		this.end = this.data[ this.data.length - 1 ].x;
+
+		this.max = 0;
+		this.min = Number.MAX_VALUE;
+
+		this.data.forEach( ( v, i ) => {
+			if( v.y < this.min ) this.min = v.y;
+			if( v.y > this.max ) this.max = v.y;
+		} );
+
+		if( this.properties.baselines.length &&
+			this.properties.baselines[ 0 ] > this.max ) {
+			this.max = 	this.properties.baselines[ 0 ];
+		}
+
+		this.refresh();
+
+	}
+
+	function createAdjustFunction( min, max, size ) {
+
+		return function adjust( v ) {
+
+			return ( v - min ) * size / ( max - min );
+
+		}
+
+	}
+
+	Graph.prototype.refresh = function() {
+
+		if( !this.data.length ) return;
+
+		var paddingTop = 5;
+
+		var adjustX = createAdjustFunction( this.start, this.end, this.canvas.width );
+		var adjustY = createAdjustFunction( this.max, 0, this.canvas.height - paddingTop );
+
+		this.ctx.fillStyle = '#efefef'
+		this.ctx.fillRect( 0, 0, this.canvas.width, this.canvas.height );
+
+		var path = new Path2D();
+
+		var ovx = 0;
+		var ovy = 0;
+		this.data.forEach( ( v, i ) => {
+
+			var vx = ~~( adjustX( v.x ) );
+			var vy = paddingTop + adjustY( v.y );
+
+			if( i === 0 ) {
+				path.moveTo( vx, vy );
+			} else {
+				if( ovx !== vx ) {
+					var cpx = ovx + ( vx - ovx ) * .5;
+					var cpy = ( vy < ovy ) ? vy : ovy;
+					//path.lineTo( adjustX( ~~v.x ), adjustY( v.y ) );
+					path.quadraticCurveTo( cpx, cpy, vx, vy );
+				}
+			}
+
+			ovx = vx;
+			ovy = vy;
+
+		} );
+
+		var path2 = new Path2D( path );
+		path2.lineTo( this.canvas.width, this.canvas.height );
+		path2.lineTo( 0, this.canvas.height );
+
+		this.ctx.fillStyle = this.properties.color;
+		this.ctx.fill( path2 );
+
+		this.ctx.translate( 0, 2 );
+		this.ctx.lineWidth = 1.5;
+		this.ctx.globalCompositeOperation = 'color-burn';
+		this.ctx.strokeStyle = '#000000'
+		this.ctx.globalAlpha = .1;
+		this.ctx.stroke( path );
+
+		this.ctx.translate( 0, -2 );
+
+		if( this.properties.baselines.length ) {
+
+			this.ctx.beginPath();
+			this.ctx.lineWidth = 1;
+			this.ctx.globalAlpha = .25;
+			this.properties.baselines.forEach( baseline => {
+				var y = paddingTop + adjustY( baseline );
+				this.ctx.moveTo( 0, y );
+				this.ctx.lineTo( this.canvas.width, y );
+			} );
+			this.ctx.stroke();
+
+		}
+
+		if( this.properties.baseline_range ) {
+
+			this.ctx.beginPath();
+			this.ctx.lineWidth = 1;
+			this.ctx.globalAlpha = .25;
+			var steps = ~~( this.max / this.properties.baseline_range );
+			for( var j = 0; j < steps; j++ ) {
+				var y = paddingTop + adjustY( j * this.properties.baseline_range );
+				this.ctx.moveTo( 0, y );
+				this.ctx.lineTo( this.canvas.width, y );
+			}
+			this.ctx.stroke();
+
+		}
+
+		this.ctx.globalAlpha = 1;
+		this.ctx.globalCompositeOperation = 'source-over';
+
+	}
+
+	window.Graph = Graph;
+
+})();

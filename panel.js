@@ -123,102 +123,51 @@ ge( 'download-data-button' ).addEventListener( 'click', e => {
 
 var recordedData = null;
 
+
+// baseline_range: n
+// baselines: [ a, b, c... ]
+
+var g = new Graph( {
+	target: document.getElementById( 'framerate-div' ),
+	color: '#d7f0d1',
+	baselines: [ 30, 60, 90 ]
+} );
+
+var g2 = new Graph( {
+	target: document.getElementById( 'gpu-div' ),
+	color: '#f0c457',
+	baselines: [ 16666666 ]
+} );
+
+var g3 = new Graph( {
+	target: document.getElementById( 'js-div' ),
+	color: '#9b7fe6',
+	baselines: [ 1.6 ]
+} );
+
+var g4 = new Graph( {
+	target: document.getElementById( 'drawcalls-div' ),
+	color: '#9dc0ed',
+	baseline_range: 200
+} );
+
 function plotRecording( recordBuffer ) {
 
 	recordedData = recordBuffer;
 
 	if( recordBuffer.length === 0 ) return;
 
-	var d = Date.now();
+	var points = recordBuffer.map( v => { return{ x: v.timestamp, y: v.framerate } } );
+	g.set( points );
 
-	var pointsGPU = [];
-	var pointsFPS = [];
-	var pointsJS = [];
-	var pointsCanvasJS = [];
-	var pointsDrawCalls = [];
+	var points2 = recordBuffer.map( v => { return{ x: v.timestamp, y: v.disjointTime } } );
+	g2.set( points2 );
 
-	var s = 2000;
+	var points3 = recordBuffer.map( v => { return{ x: v.timestamp, y: v.JavaScriptTime } } );
+	g3.set( points3 );
 
-	recordBuffer.forEach( rec => {
-		pointsFPS.push( { date: new Date( d + rec.timestamp * s ), value: rec.framerate } );
-		pointsGPU.push( { date: new Date( d + rec.timestamp * s ), value: rec.disjointTime / ( 1000 * 1000 ) } );
-		pointsJS.push( { date: new Date( d + rec.timestamp * s ), value: rec.frameTime } );
-		pointsCanvasJS.push( { date: new Date( d + rec.timestamp * s ), value: rec.JavaScriptTime } );
-		pointsDrawCalls.push( { date: new Date( d + rec.timestamp * s ), value: rec.drawCount } );
-	} );
+	var points4 = recordBuffer.map( v => { return{ x: v.timestamp, y: v.drawCount } } );
+	g4.set( points4 );
 
-	MG.data_graphic( {
-		show_tooltips: false,
-		chart_type: 'line',
-		baselines: [ { value: 0 }, {value: 30, label: '30 FPS'}, {value: 60, label: '60 FPS'}, {value: 90, label: '90 FPS'}],
-		description: "FPS",
-		brushing: true,
-		data: [ pointsFPS ],
-		full_width: true,
-		height: 180,
-		animate_on_load: true,
-		area: true,
-		linked: false,
-		x_rug: true,
-		//y_extended_ticks: true,
-		interpolate: d3.curveCatmullRomOpen, //d3.curveLinear,
-		x_axis: false,
-		x_accessor: 'date',
-		x_rug: true,
-		target: '#fps-graph',
-		legend: ['FPS' ],
-		legend_target: 'div#custom-color-key',
-		colors: ['blue' ],
-		aggregate_rollover: false
-	} );
-
-	MG.data_graphic( {
-		show_tooltips: false,
-		chart_type: 'line',
-		baselines: [ {value: 0 }, {value: 16.66, label: '16ms'} ],
-		description: "GPU, JS, Canvas JS",
-		brushing: true,
-		data: [ pointsGPU, pointsJS, pointsCanvasJS ],
-		full_width: true,
-		height: 180,
-		animate_on_load: true,
-		area: true,
-		linked: false,
-		x_rug: true,
-		//y_extended_ticks: true,
-		interpolate: d3.curveCatmullRomOpen, //d3.curveLinear,
-		x_axis: false,
-		x_accessor: 'date',
-		x_rug: true,
-		target: '#time-graph',
-		legend: [ 'GPU','JS' ],
-		legend_target: 'div#custom-color-key',
-		colors: [ 'rgb(255,100,43)', '#b70000', 'green' ],
-		aggregate_rollover: true
-	} );
-
-	MG.data_graphic( {
-		show_tooltips: false,
-		chart_type: 'line',
-		description: "Draw Calls",
-		brushing: true,
-		data: [ pointsDrawCalls ],
-		full_width: true,
-		height: 180,
-		animate_on_load: true,
-		area: true,
-		linked: false,
-		x_rug: true,
-		y_extended_ticks: true,
-		interpolate: d3.curveCatmullRomOpen, //d3.curveLinear,
-		x_axis: false,
-		x_accessor: 'date',
-		x_rug: true,
-		target: '#drawCalls-graph',
-		legend: [ 'Draw calls' ],
-		legend_target: 'div#custom-color-key',
-		colors: [ 'orange' ],
-		aggregate_rollover: false
-	} );
 
 }
