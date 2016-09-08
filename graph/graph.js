@@ -18,6 +18,7 @@
 		this.properties = properties;
 
 		this.properties.baselines = this.properties.baselines || [];
+		this.decorator = this.properties.decorator || ( v => v );
 
 		this.data = [];
 		this.start = 0;
@@ -77,7 +78,7 @@
 			var res = this.updateLabelPosition( e.pageX, e.pageY );
 			var pos = res.x * ( this.end - this.start ) / res.width + this.start;
 			var y = ( this.data.find( v => v.x >= pos ) ).y;
-			this.label.textContent = y.toFixed( 2 );
+			this.label.textContent = this.decorator( y );
 
 			var x = res.x * this.dpr;
 			var y = this.paddingTop + this.adjustY( y );
@@ -269,31 +270,46 @@
 // baseline_range: n
 // baselines: [ a, b, c... ]
 
+function formatNumber( value, sizes, decimals ) {
+   if(value == 0) return '0 Byte';
+   var k = 1000; // or 1024 for binary
+   var dm = decimals || 2;
+   var i = Math.floor(Math.log(value) / Math.log(k));
+   return parseFloat((value / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+var timeSizes = ['ns', 'us', 'ms', 's' ];
+var callSizes = [ '', 'K', 'M', 'G' ];
+
 var g = new Graph( {
 	target: document.getElementById( 'framerate-div' ),
 	color: '#d7f0d1',
-	baselines: [ 30, 60, 90 ]
+	baselines: [ 30, 60, 90 ],
+	decorator: v => `${v.toFixed( 2 )} FPS`
 } );
 
 var g2 = new Graph( {
 	target: document.getElementById( 'gpu-div' ),
 	color: '#f0c457',
-	baselines: [ 16666666 ]
+	baselines: [ 16666666 ],
+	decorator: v => `${formatNumber(v,timeSizes,2)}`
 } );
 
 var g3 = new Graph( {
 	target: document.getElementById( 'js-div' ),
 	color: '#9b7fe6',
-	baselines: [ 1.6 ]
+	baselines: [ 16 ],
+	decorator: v => `${formatNumber(v*1000*1000,timeSizes,2)}`
 } );
 
 var g4 = new Graph( {
 	target: document.getElementById( 'drawcalls-div' ),
 	color: '#9dc0ed',
-	baseline_range: 200
+	baseline_range: 200,
+	decorator: v => `${formatNumber(v,callSizes,3)}`
 } );
 
-fetch( 'sample2.json' )
+fetch( 'sample.json' )
 	.then( response => response.json() )
 	.then( data => plot( data ) );
 
