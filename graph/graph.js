@@ -72,6 +72,8 @@
 
 		this.canvas.addEventListener( 'mousemove', e => {
 
+			if( this.data.length === 0 ) return;
+
 			var res = this.updateLabelPosition( e.pageX, e.pageY );
 			var pos = res.x * ( this.end - this.start ) / res.width + this.start;
 			var y = ( this.data.find( v => v.x >= pos ) ).y;
