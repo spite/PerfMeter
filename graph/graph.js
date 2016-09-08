@@ -234,7 +234,6 @@
 		var w = this.data[ this.data.length - 1 ].x;
 		this.start = this.pivot * w - this.pivot * this.zoom * w;
 		this.end = ( this.pivot + ( 1 - this.pivot ) * this.zoom ) * w;
-		console.log( this.pivot, this.start, this.end, this.zoom );
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
