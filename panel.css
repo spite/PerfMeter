@@ -22,7 +22,7 @@ form.disabled{
 }
 input[type=radio]{ margin-right: .5em;}
 .graphs h2{ margin: 0 0 4px 0; font-size: 11px; line-height: 1em;}
-.graphs div{ height: 30px; position: relative; margin: 0 0 12px 0;}
+.graphs div{ height: 30px; position: relative; margin: 0 0 12px 0; background-color: #efefef;}
 .graphs div canvas{ cursor: crosshair; }
 .graphs .label{
 position: absolute;
@@ -37,6 +37,8 @@ bottom: 0;
 margin: 0;
 opacity: 1;
 transition: opacity 150ms ease-out;
+text-shadow: 0 1px #fff;
 }
 .graphs .flip{ right: 0; }
 .graphs .hidden{ opacity: 0; transition: opacity 350ms ease-out; }
+.graphs div h1{ position: absolute; top: 0; padding: 5px; font-size: 11px; line-height: 1em; opacity: .5; pointer-events: none; text-shadow: 0 1px #fff;}

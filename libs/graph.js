@@ -2,6 +2,28 @@
 
 	"use strict";
 
+	function throttle(fn, threshold, scope) {
+	threshold || (threshold = 250);
+	var last,
+	deferTimer;
+	return function () {
+		var context = scope || this;
+
+		var now = +new Date,
+		args = arguments;
+		if (last && now < last + threshold) {
+			clearTimeout(deferTimer);
+			deferTimer = setTimeout(function () {
+				last = now;
+				fn.apply(context, args);
+			}, threshold);
+		} else {
+			last = now;
+			fn.apply(context, args);
+		}
+	};
+}
+
 	function debounce(fn, delay) {
 		var timer = null;
 		return function () {
@@ -39,6 +61,10 @@
 		this.dpr = window.devicePixelRatio;
 		this.properties.target.appendChild( this.canvas );
 
+		this.title = document.createElement( 'h1' );
+		this.title.textContent = this.properties.title;
+		this.properties.target.appendChild( this.title );
+
 		this.label = document.createElement( 'div' );
 		this.label.className = 'label hidden';
 		this.properties.target.appendChild( this.label );
@@ -54,7 +80,14 @@
 		this.overlayCtx = this.overlayCanvas.getContext( '2d' );
 		this.properties.target.appendChild( this.overlayCanvas );
 
+		this.linkIn = this.showLabel;
+		this.linkOut = this.showLabel;
+		this.linkOver = this.updatePoint;
+		this.linkZoom = this.updateZoom;
+
 		this.resize();
+
+		this.zoom = 1;
 
 		var debouncedResize = debounce( this.resize.bind( this ), 100 );
 		window.addEventListener( 'resize', function( e  ){
@@ -62,60 +95,111 @@
 		}.bind( this ) );
 
 		this.canvas.addEventListener( 'mouseover', e => {
-			this.updateLabelPosition( e.pageX, e.pageY );
-			this.label.classList.remove( 'hidden' );
+
+			this.linkIn( e.pageX );
+			this.linkOver( e.pageX );
+
 		} );
 
 		this.canvas.addEventListener( 'mouseout', e => {
-			this.label.classList.add( 'hidden' );
-			this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
+
+			this.linkOut();
+
 		} );
 
 		this.canvas.addEventListener( 'mousemove', e => {
 
 			if( this.data.length === 0 ) return;
 
-			var res = this.updateLabelPosition( e.pageX, e.pageY );
-			var pos = res.x * ( this.end - this.start ) / res.width + this.start;
-			var y = ( this.data.find( v => v.x >= pos ) ).y;
-			this.label.textContent = this.decorator( y );
-
-			var x = res.x * this.dpr;
-			var y = this.paddingTop + this.adjustY( y );
-
-			this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
-			this.overlayCtx.globalCompositeOperation = 'color-burn';
-			this.overlayCtx.strokeStyle = '#000000'
-			this.overlayCtx.globalAlpha = .5;
-			this.overlayCtx.lineWidth = 2;
-
-			this.overlayCtx.setLineDash( [] )
-			this.overlayCtx.beginPath();
-			this.overlayCtx.arc( x, y, 4, 0, 2 * Math.PI );
-			this.overlayCtx.stroke();
-
-			this.overlayCtx.setLineDash( [ 2, 4 ] )
-			this.overlayCtx.beginPath();
-			this.overlayCtx.moveTo( x, this.overlayCanvas.height );
-			this.overlayCtx.lineTo( x, y + 3 );
-			this.overlayCtx.stroke();
+			this.linkOver( e.pageX );
 
 		})
 
+		var debouncedLinkZoom = throttle( z => this.linkZoom( z ), 20 );
+
+		this.canvas.addEventListener( 'wheel', e => {
+
+			debouncedLinkZoom( this.zoom + ( .01 * e.deltaY ) );
+			e.preventDefault();
+
+		} );
+
 	}
 
-	Graph.prototype.updateLabelPosition = function( x, y ) {
+	Graph.link = function( graphs ) {
+
+		graphs.forEach( g => {
+			g.linkIn = x => { graphs.forEach( g => g.showLabel( true ) ); };
+			g.linkOut = x => { graphs.forEach( g => g.showLabel( false ) ); };
+			g.linkOver = x => { graphs.forEach( g => g.updatePoint( x ) ); };
+			g.linkZoom = z => { graphs.forEach( g => g.updateZoom( z ) ); };
+		} )
+
+	}
+
+	Graph.prototype.updateZoom = function( zoom ) {
+
+		this.zoom = zoom;
+		if( this.zoom > 1 ) this.zoom = 1;
+		this.update();
+
+	}
+
+	Graph.prototype.showLabel = function( show ) {
+
+		if( show ) {
+			this.label.classList.remove( 'hidden' );
+		} else {
+			this.label.classList.add( 'hidden' );
+			this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
+		}
+
+	}
+
+	Graph.prototype.updatePoint = function( x ) {
+
+		if( this.data.length === 0 ) return;
+
+		var res = this.updateLabelPosition( x );
+		var pos = res.x * ( this.end - this.start ) / res.width + this.start;
+		var y = ( this.data.find( v => v.x >= pos ) ).y;
+		this.label.textContent = this.decorator( y );
+
+		var x = res.x * this.dpr;
+		var y = this.paddingTop + this.adjustY( y );
+
+		this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
+		this.overlayCtx.globalCompositeOperation = 'color-burn';
+		this.overlayCtx.strokeStyle = '#000000'
+		this.overlayCtx.globalAlpha = .5;
+		this.overlayCtx.lineWidth = 2;
+
+		this.overlayCtx.setLineDash( [] )
+		this.overlayCtx.beginPath();
+		this.overlayCtx.arc( x, y, 4, 0, 2 * Math.PI );
+		this.overlayCtx.stroke();
+
+		this.overlayCtx.setLineDash( [ 2, 4 ] )
+		this.overlayCtx.beginPath();
+		this.overlayCtx.moveTo( x, this.overlayCanvas.height );
+		this.overlayCtx.lineTo( x, y + 3 );
+		this.overlayCtx.stroke();
+
+	}
+
+	Graph.prototype.updateLabelPosition = function( x ) {
 
 		var divRect = this.canvas.getBoundingClientRect();
 		var canvasRect = this.canvas.getBoundingClientRect();
 		var x = x - canvasRect.left;
-		var y = y - canvasRect.top;
 		if( x < .5 * this.canvas.clientWidth ) {
 			this.label.classList.remove( 'flip' );
 			this.label.style.transform = `translate3d(${x}px,0,0)`;
+			this.title.classList.add( 'flip' );
 		} else {
 			this.label.classList.add( 'flip' );
 			this.label.style.transform = `translate3d(${-(this.canvas.clientWidth-x)}px,0,0)`;
+			this.title.classList.remove( 'flip' );
 		}
 		return { x: x, width: canvasRect.width };
 
@@ -136,10 +220,17 @@
 	Graph.prototype.set = function( data ) {
 
 		this.data = data;
+		this.update();
+
+	}
+
+	Graph.prototype.update = function() {
+
+		if( this.zoom > 1 ) this.zoom = 1;
 
 		this.start = this.data[ 0 ].x;
 		this.end = this.data[ this.data.length - 1 ].x;
-		this.end *= 1;//.15;
+		this.end *= this.zoom;
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
