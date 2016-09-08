@@ -46,6 +46,7 @@
 		this.start = 0;
 		this.end = 0;
 		this.paddingTop = 2;
+		this.pivot = 0;
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
@@ -109,8 +110,6 @@
 
 		this.canvas.addEventListener( 'mousemove', e => {
 
-			if( this.data.length === 0 ) return;
-
 			this.linkOver( e.pageX );
 
 		})
@@ -119,7 +118,7 @@
 
 		this.canvas.addEventListener( 'wheel', e => {
 
-			debouncedLinkZoom( this.zoom + ( .01 * e.deltaY ) );
+			debouncedLinkZoom( this.zoom + ( .005 * e.deltaY ) );
 			e.preventDefault();
 
 		} );
@@ -162,6 +161,7 @@
 
 		var res = this.updateLabelPosition( x );
 		var pos = res.x * ( this.end - this.start ) / res.width + this.start;
+		this.pivot = res.x / res.width;
 		var y = ( this.data.find( v => v.x >= pos ) ).y;
 		this.label.textContent = this.decorator( y );
 
@@ -213,7 +213,7 @@
 		this.overlayCanvas.width = this.canvas.width;
 		this.overlayCanvas.height = this.canvas.height;
 
-		this.refresh();
+		this.update();
 
 	}
 
@@ -226,18 +226,24 @@
 
 	Graph.prototype.update = function() {
 
-		if( this.zoom > 1 ) this.zoom = 1;
+		if( this.data.length === 0 ) return;
 
-		this.start = this.data[ 0 ].x;
-		this.end = this.data[ this.data.length - 1 ].x;
-		this.end *= this.zoom;
+		if( this.zoom > 1 ) this.zoom = 1;
+		if( this.zoom < .1 ) this.zoom = .1;
+
+		var w = this.data[ this.data.length - 1 ].x;
+		this.start = this.pivot * w - this.pivot * this.zoom * w;
+		this.end = ( this.pivot + ( 1 - this.pivot ) * this.zoom ) * w;
+		console.log( this.pivot, this.start, this.end, this.zoom );
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
 
 		this.data.forEach( ( v, i ) => {
-			if( v.y < this.min ) this.min = v.y;
-			if( v.y > this.max ) this.max = v.y;
+			if( v.x >= this.start && v.x <= this.end ) {
+				if( v.y < this.min ) this.min = v.y;
+				if( v.y > this.max ) this.max = v.y;
+			}
 		} );
 
 		if( this.properties.baselines.length &&
