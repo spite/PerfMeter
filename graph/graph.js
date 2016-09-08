@@ -22,7 +22,7 @@
 		this.data = [];
 		this.start = 0;
 		this.end = 0;
-		this.height = 30;
+		this.paddingTop = 5;
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
@@ -39,9 +39,19 @@
 		this.properties.target.appendChild( this.canvas );
 
 		this.label = document.createElement( 'div' );
-		this.label.style.position = 'absolute';
-		this.label.style.pointerEvents = 'none';
+		this.label.className = 'label hidden';
 		this.properties.target.appendChild( this.label );
+
+		this.overlayCanvas = document.createElement( 'canvas' );
+		this.overlayCanvas.style.width = '100%';
+		this.overlayCanvas.style.height = '100%';
+		this.overlayCanvas.style.position = 'absolute';
+		this.overlayCanvas.style.left = 0;
+		this.overlayCanvas.style.top = 0;
+		this.overlayCanvas.style.pointerEvents = 'none';
+
+		this.overlayCtx = this.overlayCanvas.getContext( '2d' );
+		this.properties.target.appendChild( this.overlayCanvas );
 
 		this.resize();
 
@@ -52,28 +62,53 @@
 
 		this.canvas.addEventListener( 'mouseover', e => {
 			this.updateLabelPosition( e.pageX, e.pageY );
-			this.label.style.display = 'block';
+			this.label.classList.remove( 'hidden' );
 		} );
 
 		this.canvas.addEventListener( 'mouseout', e => {
-			this.label.style.display = 'none';
+			this.label.classList.add( 'hidden' );
+			this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
 		} );
 
 		this.canvas.addEventListener( 'mousemove', e => {
+
 			var res = this.updateLabelPosition( e.pageX, e.pageY );
 			var pos = res.x * ( this.end - this.start ) / res.width + this.start;
-			this.label.textContent = ( this.data.find( v => v.x >= pos ) ).y;
+			var y = ( this.data.find( v => v.x >= pos ) ).y;
+			this.label.textContent = y.toFixed( 2 );
+
+			var x = res.x * this.dpr;
+			var y = this.paddingTop + this.adjustY( y );
+
+			this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
+			this.overlayCtx.globalCompositeOperation = 'color-burn';
+			this.overlayCtx.strokeStyle = '#000000'
+			this.overlayCtx.globalAlpha = .5;
+			this.overlayCtx.lineWidth = 2;
+
+			this.overlayCtx.setLineDash( [] )
+			this.overlayCtx.beginPath();
+			this.overlayCtx.arc( x, y, 4, 0, 2 * Math.PI );
+			this.overlayCtx.stroke();
+
+			this.overlayCtx.setLineDash( [ 2, 4 ] )
+			this.overlayCtx.beginPath();
+			this.overlayCtx.moveTo( x, this.overlayCanvas.height );
+			this.overlayCtx.lineTo( x, y + 3 );
+			this.overlayCtx.stroke();
+
 		})
 
 	}
 
 	Graph.prototype.updateLabelPosition = function( x, y ) {
 
-		var rectObject = this.canvas.getBoundingClientRect();
-		var x = x - rectObject.left;
-		var y = y - rectObject.top;
+		var divRect = this.canvas.getBoundingClientRect();
+		var canvasRect = this.canvas.getBoundingClientRect();
+		var x = x - canvasRect.left;
+		var y = y - canvasRect.top;
 		this.label.style.transform = `translate3d(${x}px,0,0)`;
-		return { x: x, width: rectObject.width };
+		return { x: x, width: canvasRect.width };
 
 	}
 
@@ -81,6 +116,9 @@
 
 		this.canvas.width = this.properties.target.clientWidth * this.dpr;
 		this.canvas.height = this.properties.target.clientHeight * this.dpr;
+
+		this.overlayCanvas.width = this.canvas.width;
+		this.overlayCanvas.height = this.canvas.height;
 
 		this.refresh();
 
@@ -104,7 +142,7 @@
 
 		if( this.properties.baselines.length &&
 			this.properties.baselines[ 0 ] > this.max ) {
-			this.max = 	this.properties.baselines[ 0 ];
+			this.max = this.properties.baselines[ 0 ];
 		}
 
 		this.refresh();
@@ -125,10 +163,8 @@
 
 		if( !this.data.length ) return;
 
-		var paddingTop = 5;
-
 		this.adjustX = createAdjustFunction( this.start, this.end, this.canvas.width );
-		var adjustY = createAdjustFunction( this.max, 0, this.canvas.height - paddingTop );
+		this.adjustY = createAdjustFunction( this.max, 0, this.canvas.height - this.paddingTop );
 
 		this.ctx.fillStyle = '#efefef'
 		this.ctx.fillRect( 0, 0, this.canvas.width, this.canvas.height );
@@ -143,7 +179,7 @@
 		this.data.forEach( ( v, i ) => {
 
 			var vx = ~~( this.adjustX( v.x ) );
-			var vy = adjustY( v.y );
+			var vy = this.adjustY( v.y );
 
 			if( i === 0 ) {
 				path.moveTo( vx, vy );
@@ -153,13 +189,13 @@
 				acc += vy;
 				samples++;
 				if( vx > ovx + 2 ) {
-					vy = paddingTop + acc / samples;
+					vy = this.paddingTop + acc / samples;
 					acc = 0;
 					samples = 0;
 					var cpx = ovx + ( vx - ovx ) * .5;
 					var cpy1 = ( vy < ovy ) ? vy : ovy;
 					var cpy2 = ( vy < ovy ) ? ovy : vy;
-					//path.lineTo( this.adjustX( ~~v.x ), adjustY( v.y ) );
+					//path.lineTo( this.adjustX( ~~v.x ), this.adjustY( v.y ) );
 					path.bezierCurveTo( cpx, cpy1, cpx, cpy2, vx, vy );
 					ovx = vx;
 					ovy = vy;
@@ -190,7 +226,7 @@
 			this.ctx.lineWidth = 1;
 			this.ctx.globalAlpha = .25;
 			this.properties.baselines.forEach( baseline => {
-				var y = paddingTop + adjustY( baseline );
+				var y = this.paddingTop + this.adjustY( baseline );
 				this.ctx.moveTo( 0, y );
 				this.ctx.lineTo( this.canvas.width, y );
 			} );
@@ -205,7 +241,7 @@
 			this.ctx.globalAlpha = .25;
 			var steps = ~~( this.max / this.properties.baseline_range );
 			for( var j = 0; j < steps; j++ ) {
-				var y = paddingTop + adjustY( j * this.properties.baseline_range );
+				var y = this.paddingTop + this.adjustY( j * this.properties.baseline_range );
 				this.ctx.moveTo( 0, y );
 				this.ctx.lineTo( this.canvas.width, y );
 			}
