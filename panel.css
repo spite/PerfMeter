@@ -21,5 +21,22 @@ form.disabled{
 	pointer-events: none;
 }
 input[type=radio]{ margin-right: .5em;}
-.graphs h2{ margin: 10px 10px 0 10px; font-size: 11px;}
-.graphs div{ height: 30px; position: relative; margin: 5px 10px 10px 10px;}
+.graphs h2{ margin: 0 0 4px 0; font-size: 11px; line-height: 1em;}
+.graphs div{ height: 30px; position: relative; margin: 0 0 12px 0;}
+.graphs div canvas{ cursor: crosshair; }
+.graphs .label{
+position: absolute;
+top: 0;
+pointer-events: none;
+background-color: transparent;
+font-family: inherit;
+font-size: 10px;
+background-color: rgba( 255, 255, 255, .5 );
+padding: 5px 10px 0 10px;
+bottom: 0;
+margin: 0;
+opacity: 1;
+transition: opacity 150ms ease-out;
+}
+.graphs .flip{ right: 0; }
+.graphs .hidden{ opacity: 0; transition: opacity 350ms ease-out; }

@@ -123,32 +123,45 @@ ge( 'download-data-button' ).addEventListener( 'click', e => {
 
 var recordedData = null;
 
+function formatNumber( value, sizes, decimals ) {
+   if(value == 0) return '0 Byte';
+   var k = 1000; // or 1024 for binary
+   var dm = decimals || 2;
+   var i = Math.floor(Math.log(value) / Math.log(k));
+   return parseFloat((value / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
 
+var timeSizes = ['ns', 'us', 'ms', 's' ];
+var callSizes = [ '', 'K', 'M', 'G' ];
 // baseline_range: n
 // baselines: [ a, b, c... ]
 
 var g = new Graph( {
 	target: document.getElementById( 'framerate-div' ),
 	color: '#d7f0d1',
-	baselines: [ 30, 60, 90 ]
+	baselines: [ 30, 60, 90 ],
+	decorator: v => `${v.toFixed( 2 )} FPS`
 } );
 
 var g2 = new Graph( {
 	target: document.getElementById( 'gpu-div' ),
 	color: '#f0c457',
-	baselines: [ 16666666 ]
+	baselines: [ 16666666 ],
+	decorator: v => `${formatNumber(v,timeSizes,2)}`
 } );
 
 var g3 = new Graph( {
 	target: document.getElementById( 'js-div' ),
 	color: '#9b7fe6',
-	baselines: [ 1.6 ]
+	baselines: [ 16 ],
+	decorator: v => `${formatNumber(v*1000*1000,timeSizes,2)}`
 } );
 
 var g4 = new Graph( {
 	target: document.getElementById( 'drawcalls-div' ),
 	color: '#9dc0ed',
-	baseline_range: 200
+	baseline_range: 200,
+	decorator: v => `${formatNumber(v,callSizes,3)}`
 } );
 
 function plotRecording( recordBuffer ) {
