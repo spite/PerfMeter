@@ -48,7 +48,7 @@
 		this.paddingTop = 2;
 		this.pivot = 0;
 		this.lastPoint = 0;
-
+		this.hOffset = 0;
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
 
@@ -124,6 +124,8 @@
 
 		} );
 
+		this.animate();
+
 	}
 
 	Graph.link = function( graphs ) {
@@ -168,9 +170,9 @@
 		this.pivot = res.x / res.width;
 		var y = ( this.data.find( v => v.x >= pos ) ).y;
 		this.label.textContent = this.decorator( y );
+		y = ( this.canvas.clientHeight - this.paddingTop ) * this.dpr * ( 1 - ( y / this.max ) ) + this.paddingTop * this.dpr;
 
 		var x = res.x * this.dpr;
-		var y = this.paddingTop + this.adjustY( y );
 
 		this.overlayCtx.clearRect( 0, 0, this.overlayCanvas.width, this.overlayCanvas.height );
 		this.overlayCtx.globalCompositeOperation = 'color-burn';
@@ -188,6 +190,17 @@
 		this.overlayCtx.moveTo( x, this.overlayCanvas.height );
 		this.overlayCtx.lineTo( x, y + 3 );
 		this.overlayCtx.stroke();
+
+	}
+
+	Graph.prototype.animate = function() {
+
+		if( this.invalidate ) {
+			this.draw();
+			this.invalidate = false;
+		}
+
+		requestAnimationFrame( this.animate.bind( this ) );
 
 	}
 
@@ -217,7 +230,7 @@
 		this.overlayCanvas.width = this.canvas.width;
 		this.overlayCanvas.height = this.canvas.height;
 
-		this.update();
+		this.invalidate = true;
 
 	}
 
@@ -225,6 +238,7 @@
 
 		this.data = data;
 		this.update();
+		this.updatePath();
 
 	}
 
@@ -240,7 +254,6 @@
 		var w = last - first;
 		this.start = first + this.pivot * w - this.pivot * this.zoom * w;
 		this.end = first + ( this.pivot + ( 1 - this.pivot ) * this.zoom ) * w;
-		console.log( this.zoom,this.start, this.end );
 
 		this.max = 0;
 		this.min = Number.MAX_VALUE;
@@ -257,7 +270,7 @@
 			this.max = this.properties.baselines[ 0 ];
 		}
 
-		this.refresh();
+		this.invalidate = true;
 		this.updatePoint();
 
 	}
@@ -272,9 +285,46 @@
 
 	}
 
-	Graph.prototype.refresh = function() {
+	Graph.prototype.updatePath = function() {
+
+		this.path = new Path2D();
+
+		var ovx = 0;
+		var ovy = 0;
+		var start = this.data[ 0 ].x;
+
+		this.data.forEach( ( v, i ) => {
+
+			var vx = v.x - start;
+			var vy = v.y / this.max;
+
+			if( i === 0 ) {
+				this.path.moveTo( vx, vy );
+				ovx = vx;
+				ovy = vy;
+			} else {
+				var cpx = ovx + ( vx - ovx ) * .5;
+				var cpy1 = ( vy < ovy ) ? vy : ovy;
+				var cpy2 = ( vy < ovy ) ? ovy : vy;
+				//path.lineTo( this.adjustX( ~~v.x ), this.adjustY( v.y ) );
+				this.path.bezierCurveTo( cpx, cpy1, cpx, cpy2, vx, vy );
+				ovx = vx;
+				ovy = vy;
+			}
+
+		} );
+
+		this.path2 = new Path2D( this.path );
+		this.path2.lineTo( this.data[ this.data.length - 1 ].x - start, 0 );
+		this.path2.lineTo( 0, 0 );
+
+	}
+
+	Graph.prototype.draw = function() {
 
 		if( !this.data.length ) return;
+
+		this.ctx.save();
 
 		this.adjustX = createAdjustFunction( this.start, this.end, this.canvas.width );
 		this.adjustY = createAdjustFunction( this.max, 0, this.canvas.height - this.paddingTop );
@@ -282,58 +332,27 @@
 		this.ctx.fillStyle = '#efefef'
 		this.ctx.fillRect( 0, 0, this.canvas.width, this.canvas.height );
 
-		var path = new Path2D();
+		var zoom = this.zoom * ( this.end - this.start ) / this.canvas.width;
+		var h = ( this.canvas.clientHeight - this.paddingTop ) * this.dpr;
+		this.ctx.translate( this.hOffset, h + this.paddingTop * this.dpr );
+		this.ctx.scale( 1 / zoom, -h );
 
-		var ovx = 0;
-		var ovy = 0;
-		var acc = 0;
-		var samples = 0;
-
-		this.data.forEach( ( v, i ) => {
-
-			var vx = ~~( this.adjustX( v.x ) );
-			var vy = this.adjustY( v.y );
-
-			if( i === 0 ) {
-				path.moveTo( vx, vy );
-				ovx = vx;
-				ovy = vy;
-			} else {
-				acc += vy;
-				samples++;
-				//if( vx > ovx ) {
-					vy = this.paddingTop + acc / samples;
-					acc = 0;
-					samples = 0;
-					var cpx = ovx + ( vx - ovx ) * .5;
-					var cpy1 = ( vy < ovy ) ? vy : ovy;
-					var cpy2 = ( vy < ovy ) ? ovy : vy;
-					//path.lineTo( this.adjustX( ~~v.x ), this.adjustY( v.y ) );
-					path.bezierCurveTo( cpx, cpy1, cpx, cpy2, vx, vy );
-					ovx = vx;
-					ovy = vy;
-				//}
-			}
-
-		} );
-
-		var path2 = new Path2D( path );
-		path2.lineTo( this.canvas.width, this.canvas.height );
-		path2.lineTo( 0, this.canvas.height );
+		this.ctx.lineWidth = 1 / h;
+		this.ctx.stroke( this.path );
 
 		this.ctx.fillStyle = this.properties.color;
-		this.ctx.fill( path2 );
+		this.ctx.fill( this.path2 );
 
-		this.ctx.translate( 0, 2 );
+		/*this.ctx.translate( 0, 2 );
 		this.ctx.lineWidth = 1.5;
 		this.ctx.globalCompositeOperation = 'color-burn';
 		this.ctx.strokeStyle = '#000000'
 		this.ctx.globalAlpha = .1;
-		this.ctx.stroke( path );
+		this.ctx.stroke( this.path );
 
-		this.ctx.translate( 0, -2 );
+		this.ctx.translate( 0, -2 );*/
 
-		if( this.properties.baselines.length ) {
+		/*if( this.properties.baselines.length ) {
 
 			this.ctx.beginPath();
 			this.ctx.lineWidth = 1;
@@ -360,10 +379,9 @@
 			}
 			this.ctx.stroke();
 
-		}
+		}*/
 
-		this.ctx.globalAlpha = 1;
-		this.ctx.globalCompositeOperation = 'source-over';
+		this.ctx.restore();
 
 	}
 
