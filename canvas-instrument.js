@@ -75,8 +75,12 @@ Renderer: ${v.renderer}
 
 	var postWithContentScript = function( msg ) {
 
+		/*
 		msg.source = 'perfmeter-script';
 		window.postMessage( msg, '*' );
+		*/
+		var e = new CustomEvent( 'perfmeter-message', { detail: msg } );
+		window.dispatchEvent( e );
 
 	};
 

@@ -22,7 +22,7 @@ port.onDisconnect.addListener( function() {
 	log( 'Port disconnected' );
 })
 
-window.addEventListener( 'message', function(event) {
+/*window.addEventListener( 'message', function(event) {
 
 	if( !port ) return;
 
@@ -39,7 +39,14 @@ window.addEventListener( 'message', function(event) {
 	if( verbose ) log( message );
 	port.postMessage( message );
 
-});
+});*/
+
+window.addEventListener( 'perfmeter-message', e => {
+
+	if( verbose ) log( e.detail );
+	port.postMessage( e.detail );
+
+} );
 
 var source = '(' + function () {
 	window.__PerfMeterContentScript = true;
