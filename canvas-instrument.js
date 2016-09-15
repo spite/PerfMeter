@@ -176,7 +176,8 @@ Renderer: ${v.renderer}
 				points: 0,
 				lines: 0,
 				triangles: 0,
-				log: []
+				log: [],
+				programs: new Map()
 			};
 
 			contexts.set( res, ctx );
@@ -254,7 +255,9 @@ Renderer: ${v.renderer}
 		var useProgram = proto.prototype.useProgram;
 		proto.prototype.useProgram = function() {
 
-			contexts.get( this ).useProgramCount++;
+			var ctx = contexts.get( this );
+			ctx.useProgramCount++;
+			ctx.programs.get( arguments[ 0 ] ).calls++;
 			return useProgram.apply( this, arguments );
 
 		};
@@ -271,8 +274,11 @@ Renderer: ${v.renderer}
 		var createProgram = proto.prototype.createProgram;
 		proto.prototype.createProgram = function() {
 
-			contexts.get( this ).programCount++;
-			return createProgram.apply( this, arguments );
+			var ctx = contexts.get( this );
+			ctx.programCount++;
+			var res = createProgram.apply( this, arguments );
+			ctx.programs.set( res, { queries: [], calls: 0 } );
+			return res;
 
 		};
 
