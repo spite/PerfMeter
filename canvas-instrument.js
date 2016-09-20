@@ -158,7 +158,7 @@ Renderer: ${v.renderer}
 				ctx: res,
 				type: '2d',
 				queryExt: null,
-				queries: new Map(),
+				//queries: new Map(),
 				frames: {},
 				programCount: 0,
 				textureCount: 0,
@@ -177,6 +177,7 @@ Renderer: ${v.renderer}
 				lines: 0,
 				triangles: 0,
 				log: [],
+				frames: new Map(),
 				programs: new Map()
 			};
 
@@ -190,7 +191,9 @@ Renderer: ${v.renderer}
 				var queryExt = res.getExtension( 'EXT_disjoint_timer_query' );
 				if( queryExt ) {
 					ctx.queryExt = queryExt;
+					log( queryExt.getQueryEXT(queryExt.TIMESTAMP_EXT, queryExt.QUERY_COUNTER_BITS_EXT) );
 				}
+
 			}
 
 			instrumentCanvas();
@@ -473,40 +476,39 @@ Renderer: ${v.renderer}
 		oTime = getTime();
 		rAFCount = rAFs.length;
 
-		disjointFrames.forEach( frame => {
+		contexts.forEach( context => {
 
-			frame.queries.forEach( q => {
+			context.frames.forEach( frame => {
 
-				var query = q.query;
-				var queryExt = q.context.queryExt;
-				var available = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_AVAILABLE_EXT );
-				var disjoint = q.context.ctx.getParameter( queryExt.GPU_DISJOINT_EXT );
+				var queryExt = context.queryExt;
+				var available = queryExt.getQueryObjectEXT( frame.end, queryExt.QUERY_RESULT_AVAILABLE_EXT );
+				var disjoint = context.ctx.getParameter( queryExt.GPU_DISJOINT_EXT );
 
-				if( available === null && disjoint === null ) { // Android?
+				/*if( available === null && disjoint === null ) { // Android?
 					q.resolved = true;
-				}
+				}*/
 
 				if( available && !disjoint ) {
-					q.time = queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_EXT );
-					q.resolved = true;
+					var startTime = queryExt.getQueryObjectEXT( frame.start, queryExt.QUERY_RESULT_EXT );
+					var endTime = queryExt.getQueryObjectEXT( frame.end, queryExt.QUERY_RESULT_EXT );
+					frame.time = endTime - startTime;
+					frame.resolved = true;
 				}
 
 			} );
 
 		} );
 
-		disjointFrames.forEach( frame => {
+		/*disjointFrames.forEach( frame => {
 
 			var time = 0;
 			var resolved = true;
 
-			frame.queries.forEach( q => {
-				if( q.resolved ) {
-					time += q.time;
-					q.context.disjointTime += q.time;
-				}
-				else resolved = false;
-			} );
+			if( frame.queries[ 'start' ].resolved && frame.queries[ 'end' ].resolved ) {
+				time += q.time;
+				q.context.disjointTime += q.time;
+				resolved = true;
+			}
 
 			if( resolved ) {
 				if( recording && framesQueue[ frame.frameId ] ) {
@@ -518,7 +520,7 @@ Renderer: ${v.renderer}
 
 		} );
 
-		disjointFrames.set( frameId, { frameId: frameId, queries: [] } );
+		disjointFrames.set( frameId, { frameId: frameId, queries: {} } );*/
 
 		contexts.forEach( function _contexts( context ) {
 
@@ -526,12 +528,12 @@ Renderer: ${v.renderer}
 
 			if( queryExt ) {
 
-				var query = queryExt.createQueryEXT();
-				queryExt.beginQueryEXT( queryExt.TIME_ELAPSED_EXT, query );
-				var f = disjointFrames.get( frameId );
-				if( f ) {
-					f.queries.push( { context: context, query: query, resolved: false, time: 0 } );
-				}
+				var startQuery = queryExt.createQueryEXT();
+				var endQuery = queryExt.createQueryEXT();
+				queryExt.queryCounterEXT( startQuery, queryExt.TIMESTAMP_EXT );
+
+				context.frames.set( frameId, { start: startQuery, end: endQuery, resolved: false, time: 0 } );
+
 			}
 
 		} );
@@ -546,10 +548,15 @@ Renderer: ${v.renderer}
 		JavaScriptTime = getTime() - s;
 
 		contexts.forEach( function( context ) {
+
 			var queryExt = context.queryExt;
+
 			if( queryExt ) {
-				queryExt.endQueryEXT( queryExt.TIME_ELAPSED_EXT );
+
+				queryExt.queryCounterEXT( context.frames.get( frameId ).end, queryExt.TIMESTAMP_EXT );
+
 			}
+
 		} );
 
 		frameCount++;
