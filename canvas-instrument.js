@@ -240,31 +240,35 @@ Renderer: ${v.renderer}
 
 	var instrumentContext = function( proto ) {
 
-		var drawElements = proto.prototype.drawElements;
-		proto.prototype.drawElements = function() {
+		proto.prototype.drawElements = _wrap(
+			proto.prototype.drawElements,
+			function _preDrawElements() {
+				var ctx = contexts.get( this );
+				ctx.drawCount ++;
+				updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 1 ] );
+				var query = ctx.queryExt.createQueryEXT();
+				ctx.queryExt.beginQueryEXT( ctx.queryExt.TIME_ELAPSED_EXT, query );
+			},
+			function _postDrawElements() {
+				var ctx = contexts.get( this );
+				ctx.queryExt.endQueryEXT( ctx.queryExt.TIME_ELAPSED_EXT );
+			}
+		);
 
-			var ctx = contexts.get( this );
-
-			ctx.drawCount ++;
-
-			updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 1 ] );
-
-			return drawElements.apply( this, arguments );
-
-		};
-
-		var drawArrays = proto.prototype.drawArrays;
-		proto.prototype.drawArrays = function() {
-
-			var ctx = contexts.get( this );
-
-			ctx.drawCount ++;
-
-			updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 2 ] );
-
-			return drawArrays.apply( this, arguments );
-
-		};
+		proto.prototype.drawArrays = _wrap(
+			proto.prototype.drawArrays,
+			function _preDrawArrays() {
+				var ctx = contexts.get( this );
+				ctx.drawCount ++;
+				updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 1 ] );
+				var query = ctx.queryExt.createQueryEXT();
+				ctx.queryExt.beginQueryEXT( ctx.queryExt.TIME_ELAPSED_EXT, query );
+			},
+			function _postDrawArrays() {
+				var ctx = contexts.get( this );
+				ctx.queryExt.endQueryEXT( ctx.queryExt.TIME_ELAPSED_EXT );
+			}
+		);
 
 		var useProgram = proto.prototype.useProgram;
 		proto.prototype.useProgram = function() {
@@ -419,17 +423,17 @@ Renderer: ${v.renderer}
 				var createRes = createQueryEXT.apply( this, arguments );
 				ctx.nestedQueries.set( createRes, [] );
 				ctx.reverseNestedQueries.set( createRes, createRes );
-				createRes.guid = guid();
-				log( 'New query', createRes );
+				//createRes.guid = guid();
+				//log( 'New query', createRes );
 				return createRes;
 			}
 
 			// ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
 			res.beginQueryEXT = function() {
-				log( 'Begin query. curr:', ctx.currentQuery, 'queue:', ctx.timerQueries );
+				//log( 'Begin query. curr:', ctx.currentQuery, 'queue:', ctx.timerQueries );
 				if( arguments[ 0 ] === res.TIME_ELAPSED_EXT ){
 					if( ctx.currentQuery !== null ) {
-						log( 'Query', ctx.currentQuery, 'ongoing, ending and pushing it' );
+						//log( 'Query', ctx.currentQuery, 'ongoing, ending and pushing it' );
 						endQueryEXT.apply( this, [ res.TIME_ELAPSED_EXT ] );
 						ctx.timerQueries.push( arguments[ 1 ] );
 					}
@@ -441,20 +445,20 @@ Renderer: ${v.renderer}
 
 			// ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
 			res.endQueryEXT = function() {
-				log( 'End query. curr:', ctx.currentQuery, 'queue:', ctx.timerQueries );
+				//log( 'End query. curr:', ctx.currentQuery, 'queue:', ctx.timerQueries );
 				var endRes = endQueryEXT.apply( this, arguments );
 				if( ctx.timerQueries.length ) {
-					log( 'Poping and starting from queue' );
+					//log( 'Poping and starting from queue' );
 					var q = ctx.timerQueries.pop();
 					ctx.currentQuery = q;
 					var newQuery = createQueryEXT.apply( this );
-					newQuery.guid = guid();
+					//newQuery.guid = guid();
 					beginQueryEXT.apply( this, [ res.TIME_ELAPSED_EXT, newQuery ] );
 					ctx.nestedQueries.get( ctx.currentQuery ).push( newQuery );
 					ctx.reverseNestedQueries.set( newQuery, q );
-					log( 'New nested query', newQuery, '(in place of', ctx.currentQuery, ')' );
+					//log( 'New nested query', newQuery, '(in place of', ctx.currentQuery, ')' );
 				} else {
-					log( 'Queue is empty' );
+					//log( 'Queue is empty' );
 					ctx.currentQuery = null;
 				}
 				return endRes;
@@ -470,7 +474,7 @@ Renderer: ${v.renderer}
 					var result = true;
 					nestedQueries.forEach( q => {
 						var available = getQueryObjectEXT.apply( res, [ q, res.QUERY_RESULT_AVAILABLE_EXT ] );
-						log( 'Available for', q.guid, ':', available );
+						//log( 'Available for', q.guid, ':', available );
 						result = result && available;
 					} );
 					return result;
@@ -481,7 +485,7 @@ Renderer: ${v.renderer}
 					nestedQueries.forEach( q => {
 						var timeResult = getQueryObjectEXT.apply( res, [ q, res.QUERY_RESULT_EXT ]);
 						result += timeResult;
-						log( 'Result for', q.guid, ':', timeResult );
+						//log( 'Result for', q.guid, ':', timeResult );
 					} );
 					return result;
 				}
