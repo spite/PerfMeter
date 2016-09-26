@@ -28,7 +28,7 @@ if( !window.__PerfMeterInstrumented ) {
 
 		window.console.log.apply(
 			window.console, [
-				`%c PerfMeter `,
+				`%c PerfMeter | ${performance.now().toFixed(2)}`,
 				'background: #1E9433; color: #ffffff; text-shadow: 0 -1px #000; padding: 4px 0 4px 0; line-height: 0',
 				...arguments
 			]
@@ -177,7 +177,9 @@ Renderer: ${v.renderer}
 				lines: 0,
 				triangles: 0,
 				log: [],
-				programs: new Map()
+				programs: new Map(),
+				timerQueries: [],
+				currentQuery: null
 			};
 
 			contexts.set( res, ctx );
@@ -391,6 +393,49 @@ Renderer: ${v.renderer}
 				return drawElementsInstancedANGLE.apply( this, arguments );
 
 			};
+
+		}
+
+		if( arguments[ 0 ] === 'EXT_disjoint_timer_query' ) {
+
+			var createQueryEXT = res.createQueryEXT;
+			var beginQueryEXT = res.beginQueryEXT;
+			var endQueryEXT = res.endQueryEXT;
+
+			res.createQueryEXT = function() {
+				log( 'New query' );
+				return createQueryEXT.apply( this, arguments );
+			}
+
+			// ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
+			res.beginQueryEXT = function() {
+				log( 'Begin query. curr:', ctx.currentQuery, 'queue:', ctx.timerQueries );
+				if( arguments[ 0 ] === res.TIME_ELAPSED_EXT ){
+					if( ctx.currentQuery !== null ) {
+						log( 'Query ongoing, ending and pushing it' );
+						endQueryEXT.apply( this, [ res.TIME_ELAPSED_EXT ] );
+						ctx.timerQueries.push( arguments[ 1 ] );
+					}
+					ctx.currentQuery = arguments[ 1 ];
+				}
+				return beginQueryEXT.apply( this, arguments );
+			}
+
+			// ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
+			res.endQueryEXT = function() {
+				var endRes = endQueryEXT.apply( this, arguments );
+				log( 'End query. curr:', ctx.currentQuery, 'queue:', ctx.timerQueries );
+				if( ctx.timerQueries.length ) {
+					log( 'Poping and starting from queue' );
+					var q = ctx.timerQueries.pop();
+					beginQueryEXT.apply( this, [ res.TIME_ELAPSED_EXT, q ] );
+					ctx.currentQuery = q;
+				} else {
+					log( 'Queue is empty' );
+					ctx.currentQuery = null;
+				}
+				return endRes;
+			}
 
 		}
 
