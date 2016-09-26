@@ -28,7 +28,7 @@ if( !window.__PerfMeterInstrumented ) {
 
 		window.console.log.apply(
 			window.console, [
-				`%c PerfMeter | ${performance.now().toFixed(2)}`,
+				`%c PerfMeter | ${performance.now().toFixed(2)} `,
 				'background: #1E9433; color: #ffffff; text-shadow: 0 -1px #000; padding: 4px 0 4px 0; line-height: 0',
 				...arguments
 			]
@@ -139,6 +139,16 @@ Renderer: ${v.renderer}
 
 	};
 
+	function guid() {
+		function s4() {
+			return Math.floor((1 + Math.random()) * 0x10000)
+			.toString(16)
+			.substring(1);
+		}
+		return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+		s4() + '-' + s4() + s4() + s4();
+	}
+
 	var contexts = new Map();
 	var allCanvasAre2D = true;
 
@@ -179,7 +189,9 @@ Renderer: ${v.renderer}
 				log: [],
 				programs: new Map(),
 				timerQueries: [],
-				currentQuery: null
+				currentQuery: null,
+				nestedQueries: new Map(),
+				reverseNestedQueries: new Map()
 			};
 
 			contexts.set( res, ctx );
@@ -401,10 +413,15 @@ Renderer: ${v.renderer}
 			var createQueryEXT = res.createQueryEXT;
 			var beginQueryEXT = res.beginQueryEXT;
 			var endQueryEXT = res.endQueryEXT;
+			var getQueryObjectEXT = res.getQueryObjectEXT;
 
 			res.createQueryEXT = function() {
-				log( 'New query' );
-				return createQueryEXT.apply( this, arguments );
+				var createRes = createQueryEXT.apply( this, arguments );
+				ctx.nestedQueries.set( createRes, [] );
+				ctx.reverseNestedQueries.set( createRes, createRes );
+				createRes.guid = guid();
+				log( 'New query', createRes );
+				return createRes;
 			}
 
 			// ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
@@ -412,29 +429,63 @@ Renderer: ${v.renderer}
 				log( 'Begin query. curr:', ctx.currentQuery, 'queue:', ctx.timerQueries );
 				if( arguments[ 0 ] === res.TIME_ELAPSED_EXT ){
 					if( ctx.currentQuery !== null ) {
-						log( 'Query ongoing, ending and pushing it' );
+						log( 'Query', ctx.currentQuery, 'ongoing, ending and pushing it' );
 						endQueryEXT.apply( this, [ res.TIME_ELAPSED_EXT ] );
 						ctx.timerQueries.push( arguments[ 1 ] );
 					}
 					ctx.currentQuery = arguments[ 1 ];
 				}
+				ctx.nestedQueries.get( ctx.currentQuery ).push( arguments[ 1 ] );
 				return beginQueryEXT.apply( this, arguments );
 			}
 
 			// ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
 			res.endQueryEXT = function() {
-				var endRes = endQueryEXT.apply( this, arguments );
 				log( 'End query. curr:', ctx.currentQuery, 'queue:', ctx.timerQueries );
+				var endRes = endQueryEXT.apply( this, arguments );
 				if( ctx.timerQueries.length ) {
 					log( 'Poping and starting from queue' );
 					var q = ctx.timerQueries.pop();
-					beginQueryEXT.apply( this, [ res.TIME_ELAPSED_EXT, q ] );
 					ctx.currentQuery = q;
+					var newQuery = createQueryEXT.apply( this );
+					newQuery.guid = guid();
+					beginQueryEXT.apply( this, [ res.TIME_ELAPSED_EXT, newQuery ] );
+					ctx.nestedQueries.get( ctx.currentQuery ).push( newQuery );
+					ctx.reverseNestedQueries.set( newQuery, q );
+					log( 'New nested query', newQuery, '(in place of', ctx.currentQuery, ')' );
 				} else {
 					log( 'Queue is empty' );
 					ctx.currentQuery = null;
 				}
 				return endRes;
+			}
+
+			// queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_AVAILABLE_EXT );
+			// queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_EXT );
+			res.getQueryObjectEXT = function() {
+
+				var nestedQueries = ctx.nestedQueries.get( ctx.reverseNestedQueries.get( arguments[ 0 ] ) );
+
+				if( arguments[ 1 ] === res.QUERY_RESULT_AVAILABLE_EXT ) {
+					var result = true;
+					nestedQueries.forEach( q => {
+						var available = getQueryObjectEXT.apply( res, [ q, res.QUERY_RESULT_AVAILABLE_EXT ] );
+						log( 'Available for', q.guid, ':', available );
+						result = result && available;
+					} );
+					return result;
+				}
+
+				if( arguments[ 1 ] === res.QUERY_RESULT_EXT ) {
+					var result = 0;
+					nestedQueries.forEach( q => {
+						var timeResult = getQueryObjectEXT.apply( res, [ q, res.QUERY_RESULT_EXT ]);
+						result += timeResult;
+						log( 'Result for', q.guid, ':', timeResult );
+					} );
+					return result;
+				}
+
 			}
 
 		}
