@@ -139,7 +139,7 @@ Renderer: ${v.renderer}
 
 	};
 
-	function guid() {
+	/*function guid() {
 		function s4() {
 			return Math.floor((1 + Math.random()) * 0x10000)
 			.toString(16)
@@ -147,7 +147,14 @@ Renderer: ${v.renderer}
 		}
 		return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
 		s4() + '-' + s4() + s4() + s4();
-	}
+	}*/
+	var guid = ( function() {
+		var counter = 0;
+		return function() {
+			counter++;
+			return counter;
+		}
+	} )();
 
 	var contexts = new Map();
 	var allCanvasAre2D = true;
@@ -191,7 +198,7 @@ Renderer: ${v.renderer}
 				timerQueries: [],
 				currentQuery: null,
 				nestedQueries: new Map(),
-				reverseNestedQueries: new Map()
+				allQueries: {}
 			};
 
 			contexts.set( res, ctx );
@@ -246,10 +253,12 @@ Renderer: ${v.renderer}
 				var ctx = contexts.get( this );
 				ctx.drawCount ++;
 				updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 1 ] );
+				//log( 'DrawElements start query' );
 				var query = ctx.queryExt.createQueryEXT();
 				ctx.queryExt.beginQueryEXT( ctx.queryExt.TIME_ELAPSED_EXT, query );
 			},
 			function _postDrawElements() {
+				//log( 'DrawElements end query' );
 				var ctx = contexts.get( this );
 				ctx.queryExt.endQueryEXT( ctx.queryExt.TIME_ELAPSED_EXT );
 			}
@@ -261,10 +270,12 @@ Renderer: ${v.renderer}
 				var ctx = contexts.get( this );
 				ctx.drawCount ++;
 				updateDrawCount( this, ctx, arguments[ 0 ], arguments[ 1 ] );
+				//log( 'DrawArrays start query' );
 				var query = ctx.queryExt.createQueryEXT();
 				ctx.queryExt.beginQueryEXT( ctx.queryExt.TIME_ELAPSED_EXT, query );
 			},
 			function _postDrawArrays() {
+				//log( 'DrawArrays end query' );
 				var ctx = contexts.get( this );
 				ctx.queryExt.endQueryEXT( ctx.queryExt.TIME_ELAPSED_EXT );
 			}
@@ -336,6 +347,7 @@ Renderer: ${v.renderer}
 				proto.prototype[ fn ],
 				function _pre() {
 					startTime = getTime();
+					//log( fn );
 				},
 				function _post() {
 					var ctx = contexts.get( this );
@@ -419,56 +431,78 @@ Renderer: ${v.renderer}
 			var endQueryEXT = res.endQueryEXT;
 			var getQueryObjectEXT = res.getQueryObjectEXT;
 
-			res.createQueryEXT = function() {
-				var createRes = createQueryEXT.apply( this, arguments );
+			var n = {
+				GPU_DISJOINT_EXT: res.GPU_DISJOINT_EXT,
+				CURRENT_QUERY_EXT: res.CURRENT_QUERY_EXT,
+				QUERY_COUNTER_BITS_EXT: res.QUERY_COUNTER_BITS_EXT,
+				QUERY_RESULT_AVAILABLE_EXT: res.QUERY_RESULT_AVAILABLE_EXT,
+				QUERY_RESULT_EXT: res.QUERY_RESULT_EXT,
+				TIMESTAMP_EXT: res.TIMESTAMP_EXT,
+				TIME_ELAPSED_EXT: res.TIME_ELAPSED_EXT
+			};
+
+			n.createQueryEXT = function() {
+
+				var createRes = createQueryEXT.apply( res, arguments );
+				createRes.guid = guid();
+				createRes.originalQuery = null;
 				ctx.nestedQueries.set( createRes, [] );
-				ctx.reverseNestedQueries.set( createRes, createRes );
-				//createRes.guid = guid();
-				//log( 'New query', createRes );
+				ctx.allQueries[ createRes.guid ] = createRes;
+				//log( 'New', createRes.guid );
 				return createRes;
 			}
 
 			// ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
-			res.beginQueryEXT = function() {
-				//log( 'Begin query. curr:', ctx.currentQuery, 'queue:', ctx.timerQueries );
+			n.beginQueryEXT = function() {
+
 				if( arguments[ 0 ] === res.TIME_ELAPSED_EXT ){
-					if( ctx.currentQuery !== null ) {
-						//log( 'Query', ctx.currentQuery, 'ongoing, ending and pushing it' );
-						endQueryEXT.apply( this, [ res.TIME_ELAPSED_EXT ] );
-						ctx.timerQueries.push( arguments[ 1 ] );
+					if( ctx.currentQuery ) {
+						ctx.nestedQueries.get( ctx.currentQuery ).push( arguments[ 1 ] );
+						//log( 'Ending', ctx.currentQuery.guid, 'because', arguments[ 1 ].guid, 'begins' );
+						endQueryEXT.apply( res, [ res.TIME_ELAPSED_EXT ] );
 					}
+					arguments[ 1 ].originalQuery = ctx.currentQuery;
 					ctx.currentQuery = arguments[ 1 ];
 				}
-				ctx.nestedQueries.get( ctx.currentQuery ).push( arguments[ 1 ] );
-				return beginQueryEXT.apply( this, arguments );
+				//log( 'Begin', arguments[ 1 ].guid );
+				return beginQueryEXT.apply( res, arguments );
 			}
 
 			// ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
-			res.endQueryEXT = function() {
-				//log( 'End query. curr:', ctx.currentQuery, 'queue:', ctx.timerQueries );
-				var endRes = endQueryEXT.apply( this, arguments );
-				if( ctx.timerQueries.length ) {
-					//log( 'Poping and starting from queue' );
-					var q = ctx.timerQueries.pop();
-					ctx.currentQuery = q;
-					var newQuery = createQueryEXT.apply( this );
-					//newQuery.guid = guid();
-					beginQueryEXT.apply( this, [ res.TIME_ELAPSED_EXT, newQuery ] );
-					ctx.nestedQueries.get( ctx.currentQuery ).push( newQuery );
-					ctx.reverseNestedQueries.set( newQuery, q );
-					//log( 'New nested query', newQuery, '(in place of', ctx.currentQuery, ')' );
-				} else {
-					//log( 'Queue is empty' );
-					ctx.currentQuery = null;
+			n.endQueryEXT = function() {
+
+				//log( 'End', ctx.currentQuery.guid, ctx.currentQuery.originalQuery );
+				var endRes = endQueryEXT.apply( res, arguments );
+				if( arguments[ 0 ] === res.TIME_ELAPSED_EXT ){
+					if( ctx.currentQuery.originalQuery ) {
+						var newQuery = createQueryEXT.apply( res );
+						newQuery.guid = guid();
+						newQuery.originalQuery = ctx.currentQuery.originalQuery;
+						beginQueryEXT.apply( res, [ res.TIME_ELAPSED_EXT, newQuery ] );
+						ctx.currentQuery = newQuery;
+						//log( 'Starting', newQuery.guid, 'on behalf of', newQuery.originalQuery.guid );
+						ctx.nestedQueries.set( newQuery, [] );
+						ctx.nestedQueries.get( newQuery.originalQuery ).push( newQuery );
+						newQuery.originalQuery = newQuery.originalQuery.originalQuery
+					} else {
+						ctx.currentQuery = null;
+					}
 				}
 				return endRes;
 			}
 
+			function extractNestedQueries( collection ) {
+				if( !collection || collection.length === 0 ) return [];
+				return collection.filter( c => {
+					return extractNestedQueries( ctx.nestedQueries.get( c ) );
+				} );
+			}
 			// queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_AVAILABLE_EXT );
 			// queryExt.getQueryObjectEXT( query, queryExt.QUERY_RESULT_EXT );
-			res.getQueryObjectEXT = function() {
+			n.getQueryObjectEXT = function() {
 
-				var nestedQueries = ctx.nestedQueries.get( ctx.reverseNestedQueries.get( arguments[ 0 ] ) );
+				var nestedQueries = [ arguments[ 0 ], extractNestedQueries( ctx.nestedQueries.get( arguments[ 0 ] ) ) ];
+				nestedQueries = [].concat.apply([], nestedQueries );
 
 				if( arguments[ 1 ] === res.QUERY_RESULT_AVAILABLE_EXT ) {
 					var result = true;
@@ -491,6 +525,8 @@ Renderer: ${v.renderer}
 				}
 
 			}
+
+			return n;
 
 		}
 
@@ -626,6 +662,7 @@ Renderer: ${v.renderer}
 
 			if( queryExt ) {
 
+				//log( 'Perf Start Query' );
 				var query = queryExt.createQueryEXT();
 				queryExt.beginQueryEXT( queryExt.TIME_ELAPSED_EXT, query );
 				var f = disjointFrames.get( frameId );
@@ -648,6 +685,7 @@ Renderer: ${v.renderer}
 		contexts.forEach( function( context ) {
 			var queryExt = context.queryExt;
 			if( queryExt ) {
+				//log( 'Perf End Query' );
 				queryExt.endQueryEXT( queryExt.TIME_ELAPSED_EXT );
 			}
 		} );
