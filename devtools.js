@@ -106,7 +106,7 @@ port.onMessage.addListener( msg =>  {
 		case 'inject':
 		scriptStatus = 2;
 		chrome.devtools.inspectedWindow.eval(
-			`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
+			script,//`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
 			( result, isException ) => log( result, isException )
 		);
 		break;
@@ -149,7 +149,7 @@ function initialize( panel ) {
 			panelWindow.inject = function() {
 				scriptStatus = 2;
 				chrome.devtools.inspectedWindow.eval(
-					`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
+					script,//`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
 					( result, isException ) => log( result, isException )
 				);
 			};
@@ -158,7 +158,7 @@ function initialize( panel ) {
 				scriptStatus = 1;
 				post( { action: 'reload' } );
 				chrome.devtools.inspectedWindow.reload( {
-					injectedScript: `(function(){var settings=${JSON.stringify( settings )}; ${script};})();`
+					injectedScript: script //`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`
 				} );
 			};
 

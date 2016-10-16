@@ -5,6 +5,8 @@ log( 'Background', extensionId );
 
 var settings = {};
 var script = '';
+var intrumentScript = '';
+var commonScript = '';
 
 var defaultSettings = {
 
@@ -18,10 +20,37 @@ chrome.system.cpu.getInfo( res => log( res ) );
 chrome.system.display.getInfo( res => log( res ) );
 chrome.system.memory.getInfo( res => log( res ) );
 
+function buildScript( s ) {
+
+	script = `
+"use strict";
+
+var verbose = true;
+var settings = ${JSON.stringify(settings)};
+
+if( !window[ '${extensionId}_instrumented' ] ) {
+
+	window[ '${extensionId}_instrumented' ] = true;
+
+	${commonScript}
+
+	${intrumentScript}
+
+	log( 'Canvas Instrumentation', document.location.href, settings );
+	post( { method: 'ready' } );
+
+} else {
+	log( 'Already instrumented. Skipping', document.location.href );
+}`;
+
+}
+
 Promise.all( [
 	loadSettings().then( res => { settings = res; notifySettings(); } ),
-	fetch( chrome.extension.getURL( 'canvas-instrument.js' ) ).then( res => res.text() ).then( res => script = res )
+	fetch( chrome.extension.getURL( 'canvas-instrument.js' ) ).then( res => res.text() ).then( res => intrumentScript = res ),
+	fetch( chrome.extension.getURL( 'script-common.js' ) ).then( res => res.text() ).then( res => commonScript = res ),
 ] ).then( () => {
+	buildScript();
 	log( 'Script and settings loaded', settings );
 } );
 
