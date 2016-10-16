@@ -7,6 +7,17 @@ function WebGLWrapper() {
 
 }
 
+function createUUID() {
+
+	function s4() {
+		return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+	}
+
+	return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+
+}
+
+
 HTMLCanvasElement.prototype.getContext = function() {
 
 	log( arguments );
@@ -83,6 +94,7 @@ WebGLRenderingContext.prototype.deleteShader = function() {
 
 const createProgram = WebGLRenderingContext.prototype.createProgram;
 const attachShader = WebGLRenderingContext.prototype.attachShader;
+const detachShader = WebGLRenderingContext.prototype.detachShader;
 const linkProgram = WebGLRenderingContext.prototype.linkProgram;
 const getProgramParameter = WebGLRenderingContext.prototype.getProgramParameter;
 const getProgramInfoLog = WebGLRenderingContext.prototype.getProgramInfoLog;
@@ -95,13 +107,36 @@ const useProgram = WebGLRenderingContext.prototype.useProgram;
 
 window.programs = [];
 
+function WebGLUniformLocationWrapper( context, program, name ) {
+
+	this.id = createUUID();
+	this.context = context;
+	this.program = program;
+	this.name = name;
+	this.getUniformLocation();
+
+	this.program.uniformLocations[ this.name ] = this;
+
+	log( 'Location for uniform', name, 'on program', this.program.id );
+
+}
+
+WebGLUniformLocationWrapper.prototype.getUniformLocation = function() {
+
+	this.uniformLocation = getUniformLocation.apply( this.context, [ this.program.program, this.name ] );
+
+}
+
 function WebGLProgramWrapper( context ) {
 
+	this.id = createUUID();
 	this.context = context;
 	this.program = createProgram.apply( this.context );
 	this.version = 1;
-	this.vertexShader = null;
-	this.fragmentShader = null;
+	this.vertexShaderWrapper = null;
+	this.fragmentShaderWrapper = null;
+
+	this.uniformLocations = {};
 
 	window.programs.push( this )
 
@@ -111,10 +146,30 @@ WebGLProgramWrapper.prototype.attachShader = function() {
 
 	const shaderWrapper = arguments[ 0 ];
 
-	if( shaderWrapper.type == this.context.VERTEX_SHADER ) this.vertexShader = shaderWrapper;
-	if( shaderWrapper.type == this.context.FRAGMENT_SHADER ) this.fragmentShader = shaderWrapper;
+	if( shaderWrapper.type == this.context.VERTEX_SHADER ) this.vertexShaderWrapper = shaderWrapper;
+	if( shaderWrapper.type == this.context.FRAGMENT_SHADER ) this.fragmentShaderWrapper = shaderWrapper;
 
 	return attachShader.apply( this.context, [ this.program, shaderWrapper.shader ] );
+
+}
+
+WebGLProgramWrapper.prototype.highlight = function() {
+
+	detachShader.apply( this.context, [ this.program, this.fragmentShaderWrapper.shader ] );
+
+	let fs = this.fragmentShaderWrapper.source;
+	fs = fs.replace( /\s+main\s*\(/, ' ShaderEditorInternalMain(' );
+	fs += '\r\n' + 'void main() { ShaderEditorInternalMain(); gl_FragColor.rgb *= vec3(1.,0.,1.); }';
+
+	let highlightShaderWrapper = new WebGLShaderWrapper( this.context, this.context.FRAGMENT_SHADER );
+	highlightShaderWrapper.shaderSource( fs );
+	compileShader.apply( this.context, [ highlightShaderWrapper.shader ] );
+	attachShader.apply( this.context, [ this.program, highlightShaderWrapper.shader ] );
+	linkProgram.apply( this.context, [ this.program ] );
+
+	Object.keys( this.uniformLocations ).forEach( name => {
+		this.uniformLocations[ name ].getUniformLocation();
+	} );
 
 }
 
@@ -175,7 +230,7 @@ WebGLRenderingContext.prototype.getActiveUniform = function() {
 
 WebGLRenderingContext.prototype.getUniformLocation = function() {
 
-	return getUniformLocation.apply( this, [ arguments[ 0 ].program, arguments[ 1 ] ] );
+	return new WebGLUniformLocationWrapper( this, arguments[ 0 ], arguments[ 1 ] );
 
 }
 
@@ -213,3 +268,25 @@ WebGLRenderingContext.prototype.getExtension = function() {
 	return getExtension.apply( this, [ extensionName ] );
 
 }
+
+const methods = [
+	'uniform1f', 'uniform1fv', 'uniform1i', 'uniform1iv',
+	'uniform2f', 'uniform2fv', 'uniform2i', 'uniform2iv',
+	'uniform3f', 'uniform3fv', 'uniform3i', 'uniform3iv',
+	'uniform4f', 'uniform4fv', 'uniform4i', 'uniform4iv',
+	'uniformMatrix2fv', 'uniformMatrix3fv', 'uniformMatrix4fv'
+];
+
+const originalMethods = {};
+
+methods.forEach( method => {
+	const original = WebGLRenderingContext.prototype[ method ];
+	originalMethods[ method ] = original;
+	WebGLRenderingContext.prototype[ method ] = function() {
+		const args = arguments;
+		if( !args[ 0 ] ) return;
+		args[ 0 ] = args[ 0 ].uniformLocation;
+		return original.apply( this, args );
+	}
+} );
+
