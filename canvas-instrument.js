@@ -262,6 +262,8 @@ WebGLRenderingContext.prototype.getExtension = function() {
 	switch( extensionName ) {
 		case 'WEBGL_debug_shaders':
 		return new WebGLDebugShadersExtensionWrapper( this );
+		case 'EXT_disjoint_timer_query':
+		return new EXTDisjointTimerQueryExtensionWrapper( this );
 		break;
 	}
 
@@ -290,3 +292,49 @@ methods.forEach( method => {
 	}
 } );
 
+const queryStack = [];
+let activeQuery = null;
+
+function EXTDisjointTimerQueryExtensionWrapper( context ) {
+
+	this.context = context;
+	this.extension = getExtension.apply( this.context, [ 'EXT_disjoint_timer_query' ] );
+
+	this.QUERY_RESULT_AVAILABLE_EXT = this.extension.QUERY_RESULT_AVAILABLE_EXT;
+	this.GPU_DISJOINT_EXT = this.extension.GPU_DISJOINT_EXT;
+	this.QUERY_RESULT_EXT = this.extension.QUERY_RESULT_EXT;
+	this.TIME_ELAPSED_EXT = this.extension.TIME_ELAPSED_EXT;
+
+}
+
+EXTDisjointTimerQueryExtensionWrapper.prototype.createQueryEXT = function() {
+
+	return this.extension.createQueryEXT();
+
+}
+
+EXTDisjointTimerQueryExtensionWrapper.prototype.beginQueryEXT = function( type, query ) {
+
+	if( activeQuery ){
+		this.extension.endQueryEXT( type );
+		queryStack.push( this.extension.createQueryEXT() );
+	}
+	activeQuery = query;
+	return this.extension.beginQueryEXT( type, query );
+
+}
+
+EXTDisjointTimerQueryExtensionWrapper.prototype.endQueryEXT = function( type ) {
+
+	activeQuery = queryStack.pop( query );
+	let res = this.extension.endQueryEXT( type );
+	if( activeQuery ) this.extension.beginQueryEXT( type, activeQuery );
+	return res;
+
+}
+
+EXTDisjointTimerQueryExtensionWrapper.prototype.getQueryObjectEXT = function( query, type ) {
+
+	return this.extension.getQueryObjectEXT( query, type );
+
+}
