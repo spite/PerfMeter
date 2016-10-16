@@ -29,11 +29,9 @@ window.addEventListener( 'perfmeter-message', e => {
 
 } );
 
-var source = '(' + function () {
-	window.__PerfMeterContentScript = true;
-} + ')();';
+window.addEventListener( 'perfmeter-check-content-script', e => {
 
-var script = document.createElement('script');
-script.textContent = source;
-(document.head||document.documentElement).appendChild(script);
-script.parentNode.removeChild(script);
+	var response = new Event( 'perfmeter-content-script-available' );
+	window.dispatchEvent( response );
+
+} );
