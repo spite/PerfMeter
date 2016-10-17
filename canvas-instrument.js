@@ -1,11 +1,3 @@
-var proto = HTMLCanvasElement.prototype;
-var get = proto.getContext;
-
-function WebGLWrapper() {
-
-	log( 'WebGL Wrapper' );
-
-}
 
 function createUUID() {
 
@@ -17,33 +9,128 @@ function createUUID() {
 
 }
 
-const contexts = [];
-const queryExtensions = [];
+function FrameData( id ) {
+
+	this.frameId = id;
+
+	this.framerate = 0;
+	this.frameTime = 0;
+	this.JavaScriptTime = 0;
+
+	this.contexts = new Map();
+
+}
+
+function ContextFrameData( type ) {
+
+	this.type = type;
+
+	this.JavaScriptTime = 0;
+	this.GPUTime = 0;
+	this.log = [];
+
+	this.createProgram = 0;
+	this.createTexture = 0;
+
+	this.useProgram = 0;
+	this.bindTexture = 0;
+
+	this.triangles = 0;
+	this.lines = 0;
+	this.points = 0;
+
+}
+
+function ContextData( context ) {
+
+	this.id = createUUID();
+	this.queryExt = null;
+	this.context = context;
+
+}
+
+function WebGLRenderingContextWrapper( context ) {
+
+	this.context = context;
+
+	this.queryStack = [];
+	this.activeQuery = null;
+
+}
+
+Object.keys( WebGLRenderingContext.prototype ).forEach( key => {
+
+	try{
+		if( typeof WebGLRenderingContext.prototype[ key ] === 'function' ) {
+			WebGLRenderingContextWrapper.prototype[ key ] = function() {
+				return WebGLRenderingContext.prototype[ key ].apply( this.context, arguments );
+			}
+		} else {
+			WebGLRenderingContextWrapper.prototype[ key ] = WebGLRenderingContext.prototype[ key ];
+		}
+	} catch( e ) {
+
+	}
+
+} );
+
+function WebGLDebugShadersExtensionWrapper( context ) {
+
+	this.context = context;
+	this.extension = WebGLRenderingContext.prototype.getExtension.apply( this.context, [ 'WEBGL_debug_shaders' ] );
+
+}
+
+WebGLDebugShadersExtensionWrapper.prototype.getTranslatedShaderSource = function( shaderWrapper ) {
+
+	return this.extension.getTranslatedShaderSource( shaderWrapper.shader );
+
+}
+
+WebGLRenderingContextWrapper.prototype.getExtension = function() {
+
+	var extensionName = arguments[ 0 ];
+
+	switch( extensionName ) {
+		case 'WEBGL_debug_shaders':
+		return new WebGLDebugShadersExtensionWrapper( this );
+		case 'EXT_disjoint_timer_query':
+		return new EXTDisjointTimerQueryExtensionWrapper( this );
+		break;
+	}
+
+	return this.context.getExtension( extensionName );
+
+}
+
+var contexts = [];
+
+var getContext = HTMLCanvasElement.prototype.getContext;
 
 HTMLCanvasElement.prototype.getContext = function() {
 
 	log( arguments );
-	const context = get.apply( this, arguments );
-	contexts.push( context );
 
-	queryExtensions.push( context.getExtension('EXT_disjoint_timer_query') );
+	var context = getContext.apply( this, arguments );
+	var cData = new ContextData( context );
+	contexts.push( cData );
 
-	return context;
-
-/*	if( arguments[ 0 ] === 'webgl' || arguments[ 0 ] === 'experimental-webgl' ) {
-		return new WebGLWrapper();
+	if( arguments[ 0 ] === 'webgl' || arguments[ 0 ] === 'experimental-webgl' ) {
+		var wrapper = new WebGLRenderingContextWrapper( context );
+		cData.queryExt = wrapper.getExtension( 'EXT_disjoint_timer_query' )
+		return wrapper;
 	} else {
-		return get.apply( this, arguments );
-	}*/
+		return context;
+	}
 
 }
 
-const createShader = WebGLRenderingContext.prototype.createShader;
-const shaderSource = WebGLRenderingContext.prototype.shaderSource;
-const compileShader = WebGLRenderingContext.prototype.compileShader;
-const getShaderParameter = WebGLRenderingContext.prototype.getShaderParameter;
-const getShaderInfoLog = WebGLRenderingContext.prototype.getShaderInfoLog;
-const deleteShader = WebGLRenderingContext.prototype.deleteShader;
+var createShader = WebGLRenderingContext.prototype.createShader;
+var shaderSource = WebGLRenderingContext.prototype.shaderSource;
+var compileShader = WebGLRenderingContext.prototype.compileShader;
+var getShaderParameter = WebGLRenderingContext.prototype.getShaderParameter;
+var getShaderInfoLog = WebGLRenderingContext.prototype.getShaderInfoLog;
+var deleteShader = WebGLRenderingContext.prototype.deleteShader;
 
 function WebGLShaderWrapper( context, type ) {
 
@@ -62,6 +149,7 @@ WebGLShaderWrapper.prototype.shaderSource = function( source ) {
 
 }
 
+/*
 WebGLRenderingContext.prototype.createShader = function() {
 
 	log( 'create shader' );
@@ -98,21 +186,19 @@ WebGLRenderingContext.prototype.deleteShader = function() {
 	return deleteShader.apply( this, [ arguments[ 0 ].shader ] );
 
 }
-
-const createProgram = WebGLRenderingContext.prototype.createProgram;
-const attachShader = WebGLRenderingContext.prototype.attachShader;
-const detachShader = WebGLRenderingContext.prototype.detachShader;
-const linkProgram = WebGLRenderingContext.prototype.linkProgram;
-const getProgramParameter = WebGLRenderingContext.prototype.getProgramParameter;
-const getProgramInfoLog = WebGLRenderingContext.prototype.getProgramInfoLog;
-const getActiveAttrib = WebGLRenderingContext.prototype.getActiveAttrib;
-const getAttribLocation = WebGLRenderingContext.prototype.getAttribLocation;
-const bindAttribLocation = WebGLRenderingContext.prototype.bindAttribLocation;
-const getActiveUniform = WebGLRenderingContext.prototype.getActiveUniform;
-const getUniformLocation = WebGLRenderingContext.prototype.getUniformLocation;
-const useProgram = WebGLRenderingContext.prototype.useProgram;
-
-window.programs = [];
+*/
+var createProgram = WebGLRenderingContext.prototype.createProgram;
+var attachShader = WebGLRenderingContext.prototype.attachShader;
+var detachShader = WebGLRenderingContext.prototype.detachShader;
+var linkProgram = WebGLRenderingContext.prototype.linkProgram;
+var getProgramParameter = WebGLRenderingContext.prototype.getProgramParameter;
+var getProgramInfoLog = WebGLRenderingContext.prototype.getProgramInfoLog;
+var getActiveAttrib = WebGLRenderingContext.prototype.getActiveAttrib;
+var getAttribLocation = WebGLRenderingContext.prototype.getAttribLocation;
+var bindAttribLocation = WebGLRenderingContext.prototype.bindAttribLocation;
+var getActiveUniform = WebGLRenderingContext.prototype.getActiveUniform;
+var getUniformLocation = WebGLRenderingContext.prototype.getUniformLocation;
+var useProgram = WebGLRenderingContext.prototype.useProgram;
 
 function WebGLUniformLocationWrapper( context, program, name ) {
 
@@ -145,13 +231,11 @@ function WebGLProgramWrapper( context ) {
 
 	this.uniformLocations = {};
 
-	window.programs.push( this )
-
 }
 
 WebGLProgramWrapper.prototype.attachShader = function() {
 
-	const shaderWrapper = arguments[ 0 ];
+	var shaderWrapper = arguments[ 0 ];
 
 	if( shaderWrapper.type == this.context.VERTEX_SHADER ) this.vertexShaderWrapper = shaderWrapper;
 	if( shaderWrapper.type == this.context.FRAGMENT_SHADER ) this.fragmentShaderWrapper = shaderWrapper;
@@ -164,11 +248,11 @@ WebGLProgramWrapper.prototype.highlight = function() {
 
 	detachShader.apply( this.context, [ this.program, this.fragmentShaderWrapper.shader ] );
 
-	let fs = this.fragmentShaderWrapper.source;
+	var fs = this.fragmentShaderWrapper.source;
 	fs = fs.replace( /\s+main\s*\(/, ' ShaderEditorInternalMain(' );
 	fs += '\r\n' + 'void main() { ShaderEditorInternalMain(); gl_FragColor.rgb *= vec3(1.,0.,1.); }';
 
-	let highlightShaderWrapper = new WebGLShaderWrapper( this.context, this.context.FRAGMENT_SHADER );
+	var highlightShaderWrapper = new WebGLShaderWrapper( this.context, this.context.FRAGMENT_SHADER );
 	highlightShaderWrapper.shaderSource( fs );
 	compileShader.apply( this.context, [ highlightShaderWrapper.shader ] );
 	attachShader.apply( this.context, [ this.program, highlightShaderWrapper.shader ] );
@@ -179,7 +263,7 @@ WebGLProgramWrapper.prototype.highlight = function() {
 	} );
 
 }
-
+/*
 WebGLRenderingContext.prototype.createProgram = function() {
 
 	log( 'create program' );
@@ -246,39 +330,10 @@ WebGLRenderingContext.prototype.useProgram = function() {
 	return useProgram.apply( this, [ arguments[ 0 ].program ] );
 
 }
+*/
 
-const getExtension = WebGLRenderingContext.prototype.getExtension;
-
-function WebGLDebugShadersExtensionWrapper( context ) {
-
-	this.context = context;
-	this.extension = getExtension.apply( this.context, [ 'WEBGL_debug_shaders' ] );
-
-}
-
-WebGLDebugShadersExtensionWrapper.prototype.getTranslatedShaderSource = function( shaderWrapper ) {
-
-	return this.extension.getTranslatedShaderSource( shaderWrapper.shader );
-
-}
-
-WebGLRenderingContext.prototype.getExtension = function() {
-
-	var extensionName = arguments[ 0 ];
-
-	switch( extensionName ) {
-		case 'WEBGL_debug_shaders':
-		return new WebGLDebugShadersExtensionWrapper( this );
-		case 'EXT_disjoint_timer_query':
-		return new EXTDisjointTimerQueryExtensionWrapper( this );
-		break;
-	}
-
-	return getExtension.apply( this, [ extensionName ] );
-
-}
-
-const methods = [
+/*
+var methods = [
 	'uniform1f', 'uniform1fv', 'uniform1i', 'uniform1iv',
 	'uniform2f', 'uniform2fv', 'uniform2i', 'uniform2iv',
 	'uniform3f', 'uniform3fv', 'uniform3i', 'uniform3iv',
@@ -286,28 +341,27 @@ const methods = [
 	'uniformMatrix2fv', 'uniformMatrix3fv', 'uniformMatrix4fv'
 ];
 
-const originalMethods = {};
+var originalMethods = {};
 
 methods.forEach( method => {
-	const original = WebGLRenderingContext.prototype[ method ];
+	var original = WebGLRenderingContext.prototype[ method ];
 	originalMethods[ method ] = original;
 	WebGLRenderingContext.prototype[ method ] = function() {
-		const args = arguments;
+		var args = [].slice.call( arguments );
 		if( !args[ 0 ] ) return;
 		args[ 0 ] = args[ 0 ].uniformLocation;
 		return original.apply( this, args );
 	}
 } );
+*/
 
-const queryStack = [];
-let activeQuery = null;
+function WebGLTimerQueryEXTWrapper( contextWrapper, extension ) {
 
-function WebGLTimerQueryEXTWrapper( context, extension ) {
-
-	this.context = context;
+	this.contextWrapper = contextWrapper;
 	this.extension = extension;
 	this.query = this.extension.createQueryEXT();
 	this.time = 0;
+	this.available = false;
 	this.nested = [];
 
 }
@@ -349,33 +403,36 @@ WebGLTimerQueryEXTWrapper.prototype.getResultsAvailable = function() {
 
 }
 
-function EXTDisjointTimerQueryExtensionWrapper( context ) {
+function EXTDisjointTimerQueryExtensionWrapper( contextWrapper ) {
 
-	this.context = context;
-	this.extension = getExtension.apply( this.context, [ 'EXT_disjoint_timer_query' ] );
+	this.contextWrapper = contextWrapper;
+	this.extension = WebGLRenderingContext.prototype.getExtension.apply( this.contextWrapper.context, [ 'EXT_disjoint_timer_query' ] );
 
+	this.QUERY_COUNTER_BITS_EXT = this.extension.QUERY_COUNTER_BITS_EXT;
+	this.CURRENT_QUERY_EXT = this.extension.CURRENT_QUERY_EXT;
 	this.QUERY_RESULT_AVAILABLE_EXT = this.extension.QUERY_RESULT_AVAILABLE_EXT;
 	this.GPU_DISJOINT_EXT = this.extension.GPU_DISJOINT_EXT;
 	this.QUERY_RESULT_EXT = this.extension.QUERY_RESULT_EXT;
 	this.TIME_ELAPSED_EXT = this.extension.TIME_ELAPSED_EXT;
+	this.TIMESTAMP_EXT = this.extension.TIMESTAMP_EXT;
 
 }
 
 EXTDisjointTimerQueryExtensionWrapper.prototype.createQueryEXT = function() {
 
-	return new WebGLTimerQueryEXTWrapper( this.context, this.extension );
+	return new WebGLTimerQueryEXTWrapper( this.contextWrapper, this.extension );
 
 }
 
 EXTDisjointTimerQueryExtensionWrapper.prototype.beginQueryEXT = function( type, query ) {
 
-	if( activeQuery ){
+	if( this.contextWrapper.activeQuery ){
 		this.extension.endQueryEXT( type );
-		activeQuery.nested.push( query );
-		queryStack.push( activeQuery );
+		this.contextWrapper.activeQuery.nested.push( query );
+		this.contextWrapper.queryStack.push( this.contextWrapper.activeQuery );
 	}
 
-	activeQuery = query;
+	this.contextWrapper.activeQuery = query;
 
 	return this.extension.beginQueryEXT( type, query.query );
 
@@ -383,11 +440,11 @@ EXTDisjointTimerQueryExtensionWrapper.prototype.beginQueryEXT = function( type, 
 
 EXTDisjointTimerQueryExtensionWrapper.prototype.endQueryEXT = function( type ) {
 
-	activeQuery = queryStack.pop();
-	let res = this.extension.endQueryEXT( type );
-	if( activeQuery ) {
-		let newQuery = new WebGLTimerQueryEXTWrapper( this.context, this.extension );
-		activeQuery.nested.push( newQuery );
+	this.contextWrapper.activeQuery = this.contextWrapper.queryStack.pop();
+	var res = this.extension.endQueryEXT( type );
+	if( this.contextWrapper.activeQuery ) {
+		var newQuery = new WebGLTimerQueryEXTWrapper( this.contextWrapper, this.extension );
+		this.contextWrapper.activeQuery.nested.push( newQuery );
 		this.extension.beginQueryEXT( type, newQuery.query );
 	}
 	return res;
@@ -408,8 +465,8 @@ EXTDisjointTimerQueryExtensionWrapper.prototype.getQueryObjectEXT = function( qu
 
 }
 
-const originalRequestAnimationFrame = window.requestAnimationFrame;
-const rAFQueue = [];
+var originalRequestAnimationFrame = window.requestAnimationFrame;
+var rAFQueue = [];
 
 window.requestAnimationFrame = function( c ) {
 
@@ -417,24 +474,25 @@ window.requestAnimationFrame = function( c ) {
 
 }
 
-const extQueries = [];
+var extQueries = [];
 
 function processRequestAnimationFrames() {
 
-	const ext = queryExtensions[ 0 ];
+	var ext = contexts[ 0 ] ? contexts[ 0 ].queryExt : null;
 	if( ext ) {
-		const query = ext.createQueryEXT();
+		var query = ext.createQueryEXT();
 		ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
 		extQueries.push( query );
 	}
 
-	const queue = rAFQueue.slice();
+	var queue = rAFQueue.slice( 0 );
 	rAFQueue.length = 0;
-	queue.forEach( c => {
-		c();
+	queue.forEach( rAF => {
+		rAF();
 	} );
 
 	if( ext ) {
+
 		ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
 
 		extQueries.forEach( ( query, i ) => {
@@ -443,7 +501,7 @@ function processRequestAnimationFrames() {
 			var disjoint = renderer.context.getParameter( ext.GPU_DISJOINT_EXT );
 
 			if (available && !disjoint) {
-				const time = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
+				var time = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
 				console.log( time );
 				extQueries.splice( i, 1 );
 			}
