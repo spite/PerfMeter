@@ -295,6 +295,40 @@ methods.forEach( method => {
 const queryStack = [];
 let activeQuery = null;
 
+function WebGLTimerQueryEXTWrapper( context, extension ) {
+
+	this.context = context;
+	this.extension = extension;
+	this.query = this.extension.createQueryEXT();
+	this.time = 0;
+	this.nested = [];
+
+}
+
+WebGLTimerQueryEXTWrapper.prototype.getTimes = function() {
+
+	var time = this.getTime();
+	this.nested.forEach( q => {
+		time += q.getTime();
+	} );
+
+	return time;
+
+}
+
+WebGLTimerQueryEXTWrapper.prototype.getTime = function() {
+
+	var available = this.extension.getQueryObjectEXT( this.query, this.extension.QUERY_RESULT_AVAILABLE_EXT );
+	var disjoint = this.context.getParameter( this.extension.GPU_DISJOINT_EXT );
+
+	if (available && !disjoint) {
+		this.time = this.extension.getQueryObjectEXT( this.query, this.extension.QUERY_RESULT_EXT );
+	}
+
+	return this.time;
+
+}
+
 function EXTDisjointTimerQueryExtensionWrapper( context ) {
 
 	this.context = context;
@@ -309,7 +343,7 @@ function EXTDisjointTimerQueryExtensionWrapper( context ) {
 
 EXTDisjointTimerQueryExtensionWrapper.prototype.createQueryEXT = function() {
 
-	return this.extension.createQueryEXT();
+	return new WebGLTimerQueryEXTWrapper( this.context, this.extension );
 
 }
 
@@ -317,24 +351,32 @@ EXTDisjointTimerQueryExtensionWrapper.prototype.beginQueryEXT = function( type, 
 
 	if( activeQuery ){
 		this.extension.endQueryEXT( type );
-		queryStack.push( this.extension.createQueryEXT() );
+		let newQuery = new WebGLTimerQueryEXTWrapper( this.context, this.extension );
+		activeQuery.nested.push( newQuery );
+		queryStack.push( newQuery );
 	}
+
 	activeQuery = query;
-	return this.extension.beginQueryEXT( type, query );
+
+	return this.extension.beginQueryEXT( type, query.query );
 
 }
 
 EXTDisjointTimerQueryExtensionWrapper.prototype.endQueryEXT = function( type ) {
 
-	activeQuery = queryStack.pop( query );
+	activeQuery = queryStack.pop();
 	let res = this.extension.endQueryEXT( type );
-	if( activeQuery ) this.extension.beginQueryEXT( type, activeQuery );
+	if( activeQuery ) this.extension.beginQueryEXT( type, activeQuery.query );
 	return res;
 
 }
 
 EXTDisjointTimerQueryExtensionWrapper.prototype.getQueryObjectEXT = function( query, type ) {
 
-	return this.extension.getQueryObjectEXT( query, type );
+	if( type === this.extension.QUERY_RESULT_EXT ) {
+		return query.getTimes();
+	}
+
+	return this.extension.getQueryObjectEXT( query.query, type );
 
 }
