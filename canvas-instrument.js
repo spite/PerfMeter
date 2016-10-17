@@ -17,11 +17,18 @@ function createUUID() {
 
 }
 
+const contexts = [];
+const queryExtensions = [];
 
 HTMLCanvasElement.prototype.getContext = function() {
 
 	log( arguments );
-		return get.apply( this, arguments );
+	const context = get.apply( this, arguments );
+	contexts.push( context );
+
+	queryExtensions.push( context.getExtension('EXT_disjoint_timer_query') );
+
+	return context;
 
 /*	if( arguments[ 0 ] === 'webgl' || arguments[ 0 ] === 'experimental-webgl' ) {
 		return new WebGLWrapper();
@@ -400,3 +407,52 @@ EXTDisjointTimerQueryExtensionWrapper.prototype.getQueryObjectEXT = function( qu
 	return this.extension.getQueryObjectEXT( query.query, type );
 
 }
+
+const originalRequestAnimationFrame = window.requestAnimationFrame;
+const rAFQueue = [];
+
+window.requestAnimationFrame = function( c ) {
+
+	rAFQueue.push( c );
+
+}
+
+const extQueries = [];
+
+function processRequestAnimationFrames() {
+
+	const ext = queryExtensions[ 0 ];
+	if( ext ) {
+		const query = ext.createQueryEXT();
+		ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
+		extQueries.push( query );
+	}
+
+	const queue = rAFQueue.slice();
+	rAFQueue.length = 0;
+	queue.forEach( c => {
+		c();
+	} );
+
+	if( ext ) {
+		ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
+
+		extQueries.forEach( ( query, i ) => {
+
+			var available = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_AVAILABLE_EXT );
+			var disjoint = renderer.context.getParameter( ext.GPU_DISJOINT_EXT );
+
+			if (available && !disjoint) {
+				const time = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
+				console.log( time );
+				extQueries.splice( i, 1 );
+			}
+
+		});
+	}
+
+	originalRequestAnimationFrame( processRequestAnimationFrames );
+
+}
+
+processRequestAnimationFrames();
