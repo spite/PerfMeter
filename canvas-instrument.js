@@ -53,29 +53,45 @@
 
 	}
 
-	function WebGLRenderingContextWrapper( context ) {
+	function Wrapper( context ) {
 
 		this.id = createUUID();
 		this.context = context;
 
-		this.queryStack = [];
-		this.activeQuery = null;
+		this.count = 0;
+
+	}
+
+	Wrapper.prototype.resetCount = function() {
 
 		this.count = 0;
 
 	}
 
-	WebGLRenderingContextWrapper.prototype.resetCount = function() {
-
-		this.count = 0;
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.incrementCount = function() {
+	Wrapper.prototype.incrementCount = function() {
 
 		this.count++;
 
 	}
+
+	function CanvasRenderingContext2DWrapper( context ) {
+
+		Wrapper.call( this, context );
+
+	}
+
+	CanvasRenderingContext2DWrapper.prototype = Object.create( Wrapper.prototype );
+
+	function WebGLRenderingContextWrapper( context ) {
+
+		Wrapper.call( this, context );
+
+		this.queryStack = [];
+		this.activeQuery = null;
+
+	}
+
+	WebGLRenderingContextWrapper.prototype = Object.create( Wrapper.prototype );
 
 	Object.keys( WebGLRenderingContext.prototype ).forEach( key => {
 
@@ -113,11 +129,15 @@
 		var extensionName = arguments[ 0 ];
 
 		switch( extensionName ) {
+
 			case 'WEBGL_debug_shaders':
 			return new WebGLDebugShadersExtensionWrapper( this );
+			break;
+
 			case 'EXT_disjoint_timer_query':
 			return new EXTDisjointTimerQueryExtensionWrapper( this );
 			break;
+
 		}
 
 		return this.context.getExtension( extensionName );
@@ -135,14 +155,26 @@
 		var context = getContext.apply( this, arguments );
 
 		if( arguments[ 0 ] === 'webgl' || arguments[ 0 ] === 'experimental-webgl' ) {
+
 			var wrapper = new WebGLRenderingContextWrapper( context );
 			var cData = new ContextData( wrapper );
 			cData.queryExt = wrapper.getExtension( 'EXT_disjoint_timer_query' )
 			contexts.push( cData );
 			return wrapper;
-		} else {
-			return context;
+
 		}
+
+		if( arguments[ 0 ] === '2d' ) {
+
+			var wrapper = new CanvasRenderingContext2DWrapper( context );
+			var cData = new ContextData( wrapper );
+			contexts.push( cData );
+			return wrapper;
+
+		}
+
+		return context;
+
 
 	}
 
