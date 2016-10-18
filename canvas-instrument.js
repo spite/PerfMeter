@@ -328,6 +328,12 @@
 
 	}
 
+	WebGLRenderingContextWrapper.prototype.deleteProgram = function( programWrapper ) {
+
+		WebGLRenderingContext.prototype.deleteProgram.apply( this.context, [ programWrapper.program ] );
+
+	}
+
 	WebGLRenderingContextWrapper.prototype.attachShader = function() {
 
 		return arguments[ 0 ].attachShader( arguments[ 1 ] );
