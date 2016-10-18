@@ -82,6 +82,23 @@
 
 	CanvasRenderingContext2DWrapper.prototype = Object.create( Wrapper.prototype );
 
+	Object.keys( CanvasRenderingContext2D.prototype ).forEach( key => {
+
+		try{
+			if( typeof CanvasRenderingContext2D.prototype[ key ] === 'function' ) {
+				CanvasRenderingContext2DWrapper.prototype[ key ] = function() {
+					this.incrementCount();
+					return CanvasRenderingContext2D.prototype[ key ].apply( this.context, arguments );
+				}
+			} else {
+				CanvasRenderingContext2DWrapper.prototype[ key ] = CanvasRenderingContext2D.prototype[ key ];
+			}
+		} catch( e ) {
+
+		}
+
+	} );
+
 	function WebGLRenderingContextWrapper( context ) {
 
 		Wrapper.call( this, context );
@@ -145,12 +162,16 @@
 	}
 
 	var contexts = [];
+	var canvasContexts = new Map();
 
 	var getContext = HTMLCanvasElement.prototype.getContext;
 
 	HTMLCanvasElement.prototype.getContext = function() {
 
 		log( arguments );
+
+		var c = canvasContexts.get( this );
+		if( c ) return c;
 
 		var context = getContext.apply( this, arguments );
 
@@ -160,6 +181,7 @@
 			var cData = new ContextData( wrapper );
 			cData.queryExt = wrapper.getExtension( 'EXT_disjoint_timer_query' )
 			contexts.push( cData );
+			canvasContexts.set( this, wrapper );
 			return wrapper;
 
 		}
@@ -169,10 +191,12 @@
 			var wrapper = new CanvasRenderingContext2DWrapper( context );
 			var cData = new ContextData( wrapper );
 			contexts.push( cData );
+			canvasContexts.set( this, wrapper );
 			return wrapper;
 
 		}
 
+		canvasContexts.set( this, context );
 		return context;
 
 
