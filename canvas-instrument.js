@@ -505,17 +505,23 @@
 
 	}
 
-	EXTDisjointTimerQueryExtensionWrapper.prototype.getQueryObjectEXT = function( query, type ) {
+	EXTDisjointTimerQueryExtensionWrapper.prototype.getQueryObjectEXT = function( query, pname ) {
 
-		if( type === this.extension.QUERY_RESULT_AVAILABLE_EXT ) {
+		if( pname === this.extension.QUERY_RESULT_AVAILABLE_EXT ) {
 			return query.getResultsAvailable();
 		}
 
-		if( type === this.extension.QUERY_RESULT_EXT ) {
+		if( pname === this.extension.QUERY_RESULT_EXT ) {
 			return query.getTimes();
 		}
 
-		return this.extension.getQueryObjectEXT( query.query, type );
+		return this.extension.getQueryObjectEXT( query.query, pname );
+
+	}
+
+	EXTDisjointTimerQueryExtensionWrapper.prototype.getQueryEXT = function( target, pname ) {
+
+		return this.extension.getQueryEXT( target, pname );
 
 	}
 
