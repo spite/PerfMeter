@@ -49,6 +49,7 @@
 		this.id = createUUID();
 		this.queryExt = null;
 		this.contextWrapper = contextWrapper;
+		this.extQueries = [];
 
 	}
 
@@ -491,8 +492,6 @@
 
 	}
 
-	var extQueries = [];
-
 	function processRequestAnimationFrames() {
 
 		contexts.forEach( ctx => {
@@ -500,11 +499,15 @@
 			ctx.contextWrapper.resetCount();
 
 			var ext = ctx.queryExt;
+
 			if( ext ) {
+
 				var query = ext.createQueryEXT();
 				ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
-				extQueries.push( query );
+				ctx.extQueries.push( query );
+
 			}
+
 		} );
 
 		var queue = rAFQueue.slice( 0 );
@@ -522,18 +525,20 @@
 
 				ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
 
-				extQueries.forEach( ( query, i ) => {
+				ctx.extQueries.forEach( ( query, i ) => {
 
 					var available = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_AVAILABLE_EXT );
 					var disjoint = ctx.contextWrapper.context.getParameter( ext.GPU_DISJOINT_EXT );
 
 					if (available && !disjoint) {
+
 						var queryTime = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
 						time += queryTime;
-						extQueries.splice( i, 1 );
+						ctx.extQueries.splice( i, 1 );
+
 					}
 
-				});
+				} );
 			}
 
 			if( ctx.contextWrapper.count ) {
