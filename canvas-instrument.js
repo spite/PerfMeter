@@ -63,6 +63,13 @@
 
 	}
 
+	Wrapper.prototype.resetFrame = function() {
+
+		this.resetCount();
+		this.resetJavaScriptTime();
+
+	}
+
 	Wrapper.prototype.resetCount = function() {
 
 		this.count = 0;
@@ -95,25 +102,35 @@
 
 	CanvasRenderingContext2DWrapper.prototype = Object.create( Wrapper.prototype );
 
+	CanvasRenderingContext2DWrapper.prototype.resetFrame = function() {
+
+		Wrapper.prototype.resetFrame.call( this );
+
+	}
+
 	Object.keys( CanvasRenderingContext2D.prototype ).forEach( key => {
 
-		try{
-			if( typeof CanvasRenderingContext2D.prototype[ key ] === 'function' ) {
-				CanvasRenderingContext2DWrapper.prototype[ key ] = function() {
-					this.incrementCount();
-					var startTime = performance.now();
-					var res = CanvasRenderingContext2D.prototype[ key ].apply( this.context, arguments );
-					this.incrementJavaScriptTime( performance.now() - startTime );
-					return res;
+		if( key !== 'canvas' ) {
+
+			try{
+				if( typeof CanvasRenderingContext2D.prototype[ key ] === 'function' ) {
+					CanvasRenderingContext2DWrapper.prototype[ key ] = function() {
+						this.incrementCount();
+						var startTime = performance.now();
+						var res = CanvasRenderingContext2D.prototype[ key ].apply( this.context, arguments );
+						this.incrementJavaScriptTime( performance.now() - startTime );
+						return res;
+					}
+				} else {
+					CanvasRenderingContext2DWrapper.prototype[ key ] = CanvasRenderingContext2D.prototype[ key ];
 				}
-			} else {
-				CanvasRenderingContext2DWrapper.prototype[ key ] = CanvasRenderingContext2D.prototype[ key ];
+			} catch( e ) {
+				Object.defineProperty( CanvasRenderingContext2DWrapper.prototype, key, {
+					get: function () { return this.context[ key ]; },
+					set: function ( v ) { this.context[ key ] = v; }
+				} );
 			}
-		} catch( e ) {
-			Object.defineProperty( CanvasRenderingContext2DWrapper.prototype, key, {
-				get: function () { return this.context[ key ]; },
-				set: function ( v ) { this.context[ key ] = v; }
-			} );
+
 		}
 
 	} );
@@ -125,26 +142,45 @@
 		this.queryStack = [];
 		this.activeQuery = null;
 
+		this.programCount = 0;
+		this.textureCount = 0;
+
+		this.useProgramCount = 0;
+		this.bindTextureCount = 0;
+
 	}
 
 	WebGLRenderingContextWrapper.prototype = Object.create( Wrapper.prototype );
 
+	WebGLRenderingContextWrapper.prototype.resetFrame = function() {
+
+		Wrapper.prototype.resetFrame.call( this );
+
+		this.useProgramCount = 0;
+		this.bindTextureCount = 0;
+
+	}
+
 	Object.keys( WebGLRenderingContext.prototype ).forEach( key => {
 
-		try{
-			if( typeof WebGLRenderingContext.prototype[ key ] === 'function' ) {
-				WebGLRenderingContextWrapper.prototype[ key ] = function() {
-					this.incrementCount();
-					return WebGLRenderingContext.prototype[ key ].apply( this.context, arguments );
+		if( key !== 'canvas' ) {
+
+			try{
+				if( typeof WebGLRenderingContext.prototype[ key ] === 'function' ) {
+					WebGLRenderingContextWrapper.prototype[ key ] = function() {
+						this.incrementCount();
+						return WebGLRenderingContext.prototype[ key ].apply( this.context, arguments );
+					}
+				} else {
+					WebGLRenderingContextWrapper.prototype[ key ] = WebGLRenderingContext.prototype[ key ];
 				}
-			} else {
-				WebGLRenderingContextWrapper.prototype[ key ] = WebGLRenderingContext.prototype[ key ];
+			} catch( e ) {
+				Object.defineProperty( WebGLRenderingContext.prototype, key, {
+					get: function () { return this.context[ key ]; },
+					set: function ( v ) { this.context[ key ] = v; }
+				} );
 			}
-		} catch( e ) {
-			Object.defineProperty( WebGLRenderingContext.prototype, key, {
-				get: function () { return this.context[ key ]; },
-				set: function ( v ) { this.context[ key ] = v; }
-			} );
+
 		}
 
 	} );
@@ -200,6 +236,7 @@
 		if( arguments[ 0 ] === 'webgl' || arguments[ 0 ] === 'experimental-webgl' ) {
 
 			var wrapper = new WebGLRenderingContextWrapper( context );
+			wrapper.canvas = this;
 			var cData = new ContextData( wrapper );
 			cData.queryExt = wrapper.getExtension( 'EXT_disjoint_timer_query' )
 			contexts.push( cData );
@@ -211,6 +248,7 @@
 		if( arguments[ 0 ] === '2d' ) {
 
 			var wrapper = new CanvasRenderingContext2DWrapper( context );
+			wrapper.canvas = this;
 			var cData = new ContextData( wrapper );
 			contexts.push( cData );
 			canvasContexts.set( this, wrapper );
@@ -346,12 +384,14 @@
 	WebGLRenderingContextWrapper.prototype.createProgram = function() {
 
 		log( 'create program' );
+		this.programCount++;
 		return new WebGLProgramWrapper( this );
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.deleteProgram = function( programWrapper ) {
 
+		this.programCount--;
 		WebGLRenderingContext.prototype.deleteProgram.apply( this.context, [ programWrapper.program ] );
 
 	}
@@ -412,7 +452,8 @@
 
 	WebGLRenderingContextWrapper.prototype.useProgram = function() {
 
-		return WebGLRenderingContext.prototype.useProgram.apply( this.context, [ arguments[ 0 ].program ] );
+		this.useProgramCount++;
+		return WebGLRenderingContext.prototype.useProgram.apply( this.context, [ arguments[ 0 ] ? arguments[ 0 ].program : null ] );
 
 	}
 
@@ -566,8 +607,7 @@
 
 		contexts.forEach( ctx => {
 
-			ctx.contextWrapper.resetCount();
-			ctx.contextWrapper.resetJavaScriptTime();
+			ctx.contextWrapper.resetFrame();
 
 			var ext = ctx.queryExt;
 
