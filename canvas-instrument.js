@@ -59,6 +59,7 @@
 		this.context = context;
 
 		this.count = 0;
+		this.JavaScriptTime = 0;
 
 	}
 
@@ -71,6 +72,18 @@
 	Wrapper.prototype.incrementCount = function() {
 
 		this.count++;
+
+	}
+
+	Wrapper.prototype.resetJavaScriptTime = function() {
+
+		this.JavaScriptTime = 0;
+
+	}
+
+	Wrapper.prototype.incrementJavaScriptTime = function( time ) {
+
+		this.JavaScriptTime += time;
 
 	}
 
@@ -88,7 +101,10 @@
 			if( typeof CanvasRenderingContext2D.prototype[ key ] === 'function' ) {
 				CanvasRenderingContext2DWrapper.prototype[ key ] = function() {
 					this.incrementCount();
-					return CanvasRenderingContext2D.prototype[ key ].apply( this.context, arguments );
+					var startTime = performance.now();
+					var res = CanvasRenderingContext2D.prototype[ key ].apply( this.context, arguments );
+					this.incrementJavaScriptTime( performance.now() - startTime );
+					return res;
 				}
 			} else {
 				CanvasRenderingContext2DWrapper.prototype[ key ] = CanvasRenderingContext2D.prototype[ key ];
@@ -545,6 +561,7 @@
 		contexts.forEach( ctx => {
 
 			ctx.contextWrapper.resetCount();
+			ctx.contextWrapper.resetJavaScriptTime();
 
 			var ext = ctx.queryExt;
 
@@ -558,11 +575,16 @@
 
 		} );
 
+		var startTime = performance.now();
+
 		var queue = rAFQueue.slice( 0 );
 		rAFQueue.length = 0;
 		queue.forEach( rAF => {
 			rAF();
 		} );
+
+		var endTime = performance.now();
+		var frameTime = endTime - startTime;
 
 		contexts.forEach( ctx => {
 
@@ -590,7 +612,7 @@
 			}
 
 			if( ctx.contextWrapper.count ) {
-				log( ctx.contextWrapper.id, ctx.contextWrapper.count, time );
+				log( ctx.contextWrapper.id, ctx.contextWrapper.count, time, ctx.contextWrapper.JavaScriptTime );
 			}
 
 		} );
