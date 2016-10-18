@@ -202,13 +202,6 @@
 
 	}
 
-	var createShader = WebGLRenderingContext.prototype.createShader;
-	var shaderSource = WebGLRenderingContext.prototype.shaderSource;
-	var compileShader = WebGLRenderingContext.prototype.compileShader;
-	var getShaderParameter = WebGLRenderingContext.prototype.getShaderParameter;
-	var getShaderInfoLog = WebGLRenderingContext.prototype.getShaderInfoLog;
-	var deleteShader = WebGLRenderingContext.prototype.deleteShader;
-
 	var createProgram = WebGLRenderingContext.prototype.createProgram;
 	var attachShader = WebGLRenderingContext.prototype.attachShader;
 	var detachShader = WebGLRenderingContext.prototype.detachShader;
@@ -226,7 +219,7 @@
 
 		this.id = createUUID();
 		this.contextWrapper = contextWrapper;
-		this.shader = createShader.apply( this.contextWrapper.context, [ type ] );
+		this.shader = WebGLRenderingContext.prototype.createShader.apply( this.contextWrapper.context, [ type ] );
 		this.version = 1;
 		this.source = null;
 		this.type = type;
@@ -236,7 +229,7 @@
 	WebGLShaderWrapper.prototype.shaderSource = function( source ) {
 
 		this.source = source;
-		return shaderSource.apply( this.contextWrapper.context, [ this.shader, source ] );
+		return WebGLRenderingContext.prototype.shaderSource.apply( this.contextWrapper.context, [ this.shader, source ] );
 
 	}
 
@@ -255,25 +248,25 @@
 
 	WebGLRenderingContextWrapper.prototype.compileShader = function() {
 
-		return compileShader.apply( this.context, [ arguments[ 0 ].shader ] );
+		return WebGLRenderingContext.prototype.compileShader.apply( this.context, [ arguments[ 0 ].shader ] );
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.getShaderParameter = function() {
 
-		return getShaderParameter.apply( this.context, [ arguments[ 0 ].shader, arguments[ 1 ] ] );
+		return WebGLRenderingContext.prototype.getShaderParameter.apply( this.context, [ arguments[ 0 ].shader, arguments[ 1 ] ] );
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.getShaderInfoLog = function() {
 
-		return getShaderInfoLog.apply( this.context, [ arguments[ 0 ].shader ] );
+		return WebGLRenderingContext.prototype.getShaderInfoLog.apply( this.context, [ arguments[ 0 ].shader ] );
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.deleteShader = function() {
 
-		return deleteShader.apply( this.context, [ arguments[ 0 ].shader ] );
+		return WebGLRenderingContext.prototype.deleteShader.apply( this.context, [ arguments[ 0 ].shader ] );
 
 	}
 
@@ -287,7 +280,7 @@
 
 		this.program.uniformLocations[ this.name ] = this;
 
-		log( 'Location for uniform', name, 'on program', this.program.id );
+		//log( 'Location for uniform', name, 'on program', this.program.id );
 
 	}
 
@@ -598,7 +591,7 @@
 			}
 
 			if( ctx.contextWrapper.count ) {
-				console.log( ctx.contextWrapper.id, ctx.contextWrapper.count, time );
+				log( ctx.contextWrapper.id, ctx.contextWrapper.count, time );
 			}
 
 		} );
