@@ -56,6 +56,7 @@
 	function Wrapper( context ) {
 
 		this.id = createUUID();
+		this.canvas = null;
 		this.context = context;
 
 		this.count = 0;
@@ -194,6 +195,7 @@
 		if( arguments[ 0 ] === 'webgl' || arguments[ 0 ] === 'experimental-webgl' ) {
 
 			var wrapper = new WebGLRenderingContextWrapper( context );
+			wrapper.canvas = this;
 			var cData = new ContextData( wrapper );
 			cData.queryExt = wrapper.getExtension( 'EXT_disjoint_timer_query' )
 			contexts.push( cData );
@@ -205,6 +207,7 @@
 		if( arguments[ 0 ] === '2d' ) {
 
 			var wrapper = new CanvasRenderingContext2DWrapper( context );
+			wrapper.canvas = this;
 			var cData = new ContextData( wrapper );
 			contexts.push( cData );
 			canvasContexts.set( this, wrapper );
