@@ -202,19 +202,6 @@
 
 	}
 
-	var createProgram = WebGLRenderingContext.prototype.createProgram;
-	var attachShader = WebGLRenderingContext.prototype.attachShader;
-	var detachShader = WebGLRenderingContext.prototype.detachShader;
-	var linkProgram = WebGLRenderingContext.prototype.linkProgram;
-	var getProgramParameter = WebGLRenderingContext.prototype.getProgramParameter;
-	var getProgramInfoLog = WebGLRenderingContext.prototype.getProgramInfoLog;
-	var getActiveAttrib = WebGLRenderingContext.prototype.getActiveAttrib;
-	var getAttribLocation = WebGLRenderingContext.prototype.getAttribLocation;
-	var bindAttribLocation = WebGLRenderingContext.prototype.bindAttribLocation;
-	var getActiveUniform = WebGLRenderingContext.prototype.getActiveUniform;
-	var getUniformLocation = WebGLRenderingContext.prototype.getUniformLocation;
-	var useProgram = WebGLRenderingContext.prototype.useProgram;
-
 	function WebGLShaderWrapper( contextWrapper, type ) {
 
 		this.id = createUUID();
@@ -286,7 +273,7 @@
 
 	WebGLUniformLocationWrapper.prototype.getUniformLocation = function() {
 
-		this.uniformLocation = getUniformLocation.apply( this.contextWrapper, [ this.program.program, this.name ] );
+		this.uniformLocation = WebGLRenderingContext.prototype.getUniformLocation.apply( this.contextWrapper, [ this.program.program, this.name ] );
 
 	}
 
@@ -294,7 +281,7 @@
 
 		this.id = createUUID();
 		this.contextWrapper = contextWrapper;
-		this.program = createProgram.apply( this.contextWrapper.context );
+		this.program = WebGLRenderingContext.prototype.createProgram.apply( this.contextWrapper.context );
 		this.version = 1;
 		this.vertexShaderWrapper = null;
 		this.fragmentShaderWrapper = null;
@@ -310,7 +297,7 @@
 		if( shaderWrapper.type == this.contextWrapper.context.VERTEX_SHADER ) this.vertexShaderWrapper = shaderWrapper;
 		if( shaderWrapper.type == this.contextWrapper.context.FRAGMENT_SHADER ) this.fragmentShaderWrapper = shaderWrapper;
 
-		return attachShader.apply( this.contextWrapper.context, [ this.program, shaderWrapper.shader ] );
+		return WebGLRenderingContext.prototype.attachShader.apply( this.contextWrapper.context, [ this.program, shaderWrapper.shader ] );
 
 	}
 
@@ -324,9 +311,9 @@
 
 		var highlightShaderWrapper = new WebGLShaderWrapper( this.contextWrapper, this.contextWrapper.context.FRAGMENT_SHADER );
 		highlightShaderWrapper.shaderSource( fs );
-		compileShader.apply( this.contextWrapper.context, [ highlightShaderWrapper.shader ] );
-		attachShader.apply( this.contextWrapper.context, [ this.program, highlightShaderWrapper.shader ] );
-		linkProgram.apply( this.contextWrapper.context, [ this.program ] );
+		WebGLRenderingContext.prototype.compileShader.apply( this.contextWrapper.context, [ highlightShaderWrapper.shader ] );
+		WebGLRenderingContext.prototype.attachShader.apply( this.contextWrapper.context, [ this.program, highlightShaderWrapper.shader ] );
+		WebGLRenderingContext.prototype.linkProgram.apply( this.contextWrapper.context, [ this.program ] );
 
 		Object.keys( this.uniformLocations ).forEach( name => {
 			this.uniformLocations[ name ].getUniformLocation();
@@ -349,43 +336,43 @@
 
 	WebGLRenderingContextWrapper.prototype.linkProgram = function() {
 
-		return linkProgram.apply( this.context, [ arguments[ 0 ].program ] );
+		return WebGLRenderingContext.prototype.linkProgram.apply( this.context, [ arguments[ 0 ].program ] );
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.getProgramParameter = function() {
 
-		return getProgramParameter.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
+		return WebGLRenderingContext.prototype.getProgramParameter.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.getProgramInfoLog = function() {
 
-		return getProgramInfoLog.apply( this.context, [ arguments[ 0 ].program ] );
+		return WebGLRenderingContext.prototype.getProgramInfoLog.apply( this.context, [ arguments[ 0 ].program ] );
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.getActiveAttrib = function() {
 
-		return getActiveAttrib.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
+		return WebGLRenderingContext.prototype.getActiveAttrib.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.getAttribLocation = function() {
 
-		return getAttribLocation.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
+		return WebGLRenderingContext.prototype.getAttribLocation.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.bindAttribLocation = function() {
 
-		return bindAttribLocation.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ], arguments[ 2 ] ] );
+		return WebGLRenderingContext.prototype.bindAttribLocation.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ], arguments[ 2 ] ] );
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.getActiveUniform = function() {
 
-		return getActiveUniform.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
+		return WebGLRenderingContext.prototype.getActiveUniform.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
 
 	}
 
@@ -397,7 +384,7 @@
 
 	WebGLRenderingContextWrapper.prototype.useProgram = function() {
 
-		return useProgram.apply( this.context, [ arguments[ 0 ].program ] );
+		return WebGLRenderingContext.prototype.useProgram.apply( this.context, [ arguments[ 0 ].program ] );
 
 	}
 
