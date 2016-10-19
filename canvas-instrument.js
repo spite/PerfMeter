@@ -151,6 +151,10 @@
 		this.drawArrayCalls = 0;
 		this.drawElementsCalls = 0;
 
+		this.pointsCount = 0;
+		this.linesCount = 0;
+		this.trianglesCount = 0;
+
 	}
 
 	WebGLRenderingContextWrapper.prototype = Object.create( Wrapper.prototype );
@@ -168,6 +172,10 @@
 
 		this.drawArrayCalls = 0;
 		this.drawElementsCalls = 0;
+
+		this.pointsCount = 0;
+		this.linesCount = 0;
+		this.trianglesCount = 0;
 
 	}
 
@@ -241,9 +249,38 @@
 
 	}
 
+	WebGLRenderingContextWrapper.prototype.updateDrawCount = function( mode, count ) {
+
+		var gl = this.context;
+
+		switch( mode ){
+			case gl.POINTS:
+				this.pointsCount += count;
+				break;
+			case gl.LINE_STRIP:
+				this.linesCount += count - 1;
+				break;
+			case gl.LINE_LOOP:
+				this.linesCount += count;
+				break;
+			case gl.LINES:
+				this.linesCount += count / 2;
+				break;
+			case gl.TRIANGLE_STRIP:
+			case gl.TRIANGLE_FAN:
+				this.trianglesCount += count - 2;
+				break;
+			case gl.TRIANGLES:
+				this.trianglesCount += count / 3;
+				break;
+		}
+
+	};
+
 	WebGLRenderingContextWrapper.prototype.drawElements = function() {
 
 		this.drawElementsCalls++;
+		this.updateDrawCount( arguments[ 0 ], arguments[ 1 ] );
 
 		return WebGLRenderingContext.prototype.drawElements.apply( this.context, arguments );
 
@@ -252,6 +289,7 @@
 	WebGLRenderingContextWrapper.prototype.drawArrays = function() {
 
 		this.drawArrayCalls++;
+		this.updateDrawCount( arguments[ 0 ], arguments[ 1 ] );
 
 		return WebGLRenderingContext.prototype.drawArrays.apply( this.context, arguments );
 
@@ -692,7 +730,11 @@
 						var queryTime = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
 						var time = queryTime;
 						if( ctx.contextWrapper.count ) {
-							log( ctx.contextWrapper.id, ctx.contextWrapper.count, time, ctx.contextWrapper.JavaScriptTime, ctx.contextWrapper.drawArrayCalls, ctx.contextWrapper.drawElementsCalls );
+							log( ctx.contextWrapper.id, ctx.contextWrapper.count,
+							    time, ctx.contextWrapper.JavaScriptTime,
+							    ctx.contextWrapper.drawArrayCalls, ctx.contextWrapper.drawElementsCalls,
+							    ctx.contextWrapper.pointsCount, ctx.contextWrapper.linesCount, ctx.contextWrapper.trianglesCount
+							);
 						}
 						ctx.extQueries.splice( i, 1 );
 
