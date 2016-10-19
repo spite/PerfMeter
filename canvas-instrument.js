@@ -148,9 +148,16 @@
 		this.useProgramCount = 0;
 		this.bindTextureCount = 0;
 
+		this.drawArrayCalls = 0;
+		this.drawElementsCalls = 0;
+
 	}
 
 	WebGLRenderingContextWrapper.prototype = Object.create( Wrapper.prototype );
+
+	WebGLRenderingContextWrapper.prototype.cloned = false;
+
+	cloneWebGLRenderingContextPrototype();
 
 	WebGLRenderingContextWrapper.prototype.resetFrame = function() {
 
@@ -159,31 +166,46 @@
 		this.useProgramCount = 0;
 		this.bindTextureCount = 0;
 
+		this.drawArrayCalls = 0;
+		this.drawElementsCalls = 0;
+
 	}
 
-	Object.keys( WebGLRenderingContext.prototype ).forEach( key => {
+	function cloneWebGLRenderingContextPrototype() {
 
-		if( key !== 'canvas' ) {
+		// some sites (e.g. http://codeflow.org/webgl/deferred-irradiance-volumes/www/)
+		// modify the prototype, and they do it after the initial check for support
 
-			try{
-				if( typeof WebGLRenderingContext.prototype[ key ] === 'function' ) {
-					WebGLRenderingContextWrapper.prototype[ key ] = function() {
-						this.incrementCount();
-						return WebGLRenderingContext.prototype[ key ].apply( this.context, arguments );
+//		if( WebGLRenderingContextWrapper.prototype.cloned ) return;
+//		WebGLRenderingContextWrapper.prototype.cloned = true;
+
+		Object.keys( WebGLRenderingContext.prototype ).forEach( key => {
+
+			if( key !== 'canvas' ) {
+
+				try{
+					if( typeof WebGLRenderingContext.prototype[ key ] === 'function' ) {
+						WebGLRenderingContextWrapper.prototype[ key ] = function() {
+							this.incrementCount();
+							return WebGLRenderingContext.prototype[ key ].apply( this.context, arguments );
+						}
+					} else {
+						WebGLRenderingContextWrapper.prototype[ key ] = WebGLRenderingContext.prototype[ key ];
 					}
-				} else {
-					WebGLRenderingContextWrapper.prototype[ key ] = WebGLRenderingContext.prototype[ key ];
+				} catch( e ) {
+					Object.defineProperty( WebGLRenderingContext.prototype, key, {
+						get: function () { return this.context[ key ]; },
+						set: function ( v ) { this.context[ key ] = v; }
+					} );
 				}
-			} catch( e ) {
-				Object.defineProperty( WebGLRenderingContext.prototype, key, {
-					get: function () { return this.context[ key ]; },
-					set: function ( v ) { this.context[ key ] = v; }
-				} );
+
 			}
 
-		}
+		} );
 
-	} );
+		instrumentWebGLRenderingContext();
+
+	}
 
 	function WebGLDebugShadersExtensionWrapper( contextWrapper ) {
 
@@ -216,6 +238,22 @@
 		}
 
 		return this.context.getExtension( extensionName );
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.drawElements = function() {
+
+		this.drawElementsCalls++;
+
+		return WebGLRenderingContext.prototype.drawElements.apply( this.context, arguments );
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.drawArrays = function() {
+
+		this.drawArrayCalls++;
+
+		return WebGLRenderingContext.prototype.drawArrays.apply( this.context, arguments );
 
 	}
 
@@ -277,43 +315,6 @@
 
 		this.source = source;
 		return WebGLRenderingContext.prototype.shaderSource.apply( this.contextWrapper.context, [ this.shader, source ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.createShader = function() {
-
-		log( 'create shader' );
-		return new WebGLShaderWrapper( this, arguments[ 0 ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.shaderSource = function() {
-
-		return arguments[ 0 ].shaderSource( arguments[ 1 ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.compileShader = function() {
-
-		return WebGLRenderingContext.prototype.compileShader.apply( this.context, [ arguments[ 0 ].shader ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.getShaderParameter = function() {
-
-		return WebGLRenderingContext.prototype.getShaderParameter.apply( this.context, [ arguments[ 0 ].shader, arguments[ 1 ] ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.getShaderInfoLog = function() {
-
-		return WebGLRenderingContext.prototype.getShaderInfoLog.apply( this.context, [ arguments[ 0 ].shader ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.deleteShader = function() {
-
-		return WebGLRenderingContext.prototype.deleteShader.apply( this.context, [ arguments[ 0 ].shader ] );
 
 	}
 
@@ -381,102 +382,143 @@
 
 	}
 
-	WebGLRenderingContextWrapper.prototype.createProgram = function() {
+	function instrumentWebGLRenderingContext() {
 
-		log( 'create program' );
-		this.programCount++;
-		return new WebGLProgramWrapper( this );
+		WebGLRenderingContextWrapper.prototype.createShader = function() {
 
-	}
+			log( 'create shader' );
+			return new WebGLShaderWrapper( this, arguments[ 0 ] );
 
-	WebGLRenderingContextWrapper.prototype.deleteProgram = function( programWrapper ) {
-
-		this.programCount--;
-		WebGLRenderingContext.prototype.deleteProgram.apply( this.context, [ programWrapper.program ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.attachShader = function() {
-
-		return arguments[ 0 ].attachShader( arguments[ 1 ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.linkProgram = function() {
-
-		return WebGLRenderingContext.prototype.linkProgram.apply( this.context, [ arguments[ 0 ].program ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.getProgramParameter = function() {
-
-		return WebGLRenderingContext.prototype.getProgramParameter.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.getProgramInfoLog = function() {
-
-		return WebGLRenderingContext.prototype.getProgramInfoLog.apply( this.context, [ arguments[ 0 ].program ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.getActiveAttrib = function() {
-
-		return WebGLRenderingContext.prototype.getActiveAttrib.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.getAttribLocation = function() {
-
-		return WebGLRenderingContext.prototype.getAttribLocation.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.bindAttribLocation = function() {
-
-		return WebGLRenderingContext.prototype.bindAttribLocation.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ], arguments[ 2 ] ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.getActiveUniform = function() {
-
-		return WebGLRenderingContext.prototype.getActiveUniform.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.getUniformLocation = function() {
-
-		return new WebGLUniformLocationWrapper( this.context, arguments[ 0 ], arguments[ 1 ] );
-
-	}
-
-	WebGLRenderingContextWrapper.prototype.useProgram = function() {
-
-		this.useProgramCount++;
-		return WebGLRenderingContext.prototype.useProgram.apply( this.context, [ arguments[ 0 ] ? arguments[ 0 ].program : null ] );
-
-	}
-
-	var methods = [
-		'uniform1f', 'uniform1fv', 'uniform1i', 'uniform1iv',
-		'uniform2f', 'uniform2fv', 'uniform2i', 'uniform2iv',
-		'uniform3f', 'uniform3fv', 'uniform3i', 'uniform3iv',
-		'uniform4f', 'uniform4fv', 'uniform4i', 'uniform4iv',
-		'uniformMatrix2fv', 'uniformMatrix3fv', 'uniformMatrix4fv'
-	];
-
-	var originalMethods = {};
-
-	methods.forEach( method => {
-		var original = WebGLRenderingContext.prototype[ method ];
-		originalMethods[ method ] = original;
-		WebGLRenderingContextWrapper.prototype[ method ] = function() {
-			var args = [].slice.call( arguments );
-			if( !args[ 0 ] ) return;
-			args[ 0 ] = args[ 0 ].uniformLocation;
-			return original.apply( this.context, args );
 		}
-	} );
+
+		WebGLRenderingContextWrapper.prototype.shaderSource = function() {
+
+			return arguments[ 0 ].shaderSource( arguments[ 1 ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.compileShader = function() {
+
+			return WebGLRenderingContext.prototype.compileShader.apply( this.context, [ arguments[ 0 ].shader ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.getShaderParameter = function() {
+
+			return WebGLRenderingContext.prototype.getShaderParameter.apply( this.context, [ arguments[ 0 ].shader, arguments[ 1 ] ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.getShaderInfoLog = function() {
+
+			return WebGLRenderingContext.prototype.getShaderInfoLog.apply( this.context, [ arguments[ 0 ].shader ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.deleteShader = function() {
+
+			return WebGLRenderingContext.prototype.deleteShader.apply( this.context, [ arguments[ 0 ].shader ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.createProgram = function() {
+
+			log( 'create program' );
+			this.programCount++;
+			return new WebGLProgramWrapper( this );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.deleteProgram = function( programWrapper ) {
+
+			this.programCount--;
+			WebGLRenderingContext.prototype.deleteProgram.apply( this.context, [ programWrapper.program ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.attachShader = function() {
+
+			return arguments[ 0 ].attachShader( arguments[ 1 ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.linkProgram = function() {
+
+			return WebGLRenderingContext.prototype.linkProgram.apply( this.context, [ arguments[ 0 ].program ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.getProgramParameter = function() {
+
+			return WebGLRenderingContext.prototype.getProgramParameter.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.getProgramInfoLog = function() {
+
+			return WebGLRenderingContext.prototype.getProgramInfoLog.apply( this.context, [ arguments[ 0 ].program ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.getActiveAttrib = function() {
+
+			return WebGLRenderingContext.prototype.getActiveAttrib.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.getAttribLocation = function() {
+
+			return WebGLRenderingContext.prototype.getAttribLocation.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.bindAttribLocation = function() {
+
+			return WebGLRenderingContext.prototype.bindAttribLocation.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ], arguments[ 2 ] ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.getActiveUniform = function() {
+
+			return WebGLRenderingContext.prototype.getActiveUniform.apply( this.context, [ arguments[ 0 ].program, arguments[ 1 ] ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.getUniformLocation = function() {
+
+			return new WebGLUniformLocationWrapper( this.context, arguments[ 0 ], arguments[ 1 ] );
+
+		}
+
+		WebGLRenderingContextWrapper.prototype.useProgram = function() {
+
+			this.useProgramCount++;
+			return WebGLRenderingContext.prototype.useProgram.apply( this.context, [ arguments[ 0 ] ? arguments[ 0 ].program : null ] );
+
+		}
+
+		var methods = [
+			'uniform1f', 'uniform1fv', 'uniform1i', 'uniform1iv',
+			'uniform2f', 'uniform2fv', 'uniform2i', 'uniform2iv',
+			'uniform3f', 'uniform3fv', 'uniform3i', 'uniform3iv',
+			'uniform4f', 'uniform4fv', 'uniform4i', 'uniform4iv',
+			'uniformMatrix2fv', 'uniformMatrix3fv', 'uniformMatrix4fv'
+		];
+
+		var originalMethods = {};
+
+		methods.forEach( method => {
+			var original = WebGLRenderingContext.prototype[ method ];
+			originalMethods[ method ] = original;
+			WebGLRenderingContextWrapper.prototype[ method ] = function() {
+				var args = [].slice.call( arguments );
+				if( !args[ 0 ] ) return;
+				args[ 0 ] = args[ 0 ].uniformLocation;
+				return original.apply( this.context, args );
+			}
+		} );
+
+	}
 
 	function WebGLTimerQueryEXTWrapper( contextWrapper, extension ) {
 
@@ -635,7 +677,6 @@
 		contexts.forEach( ctx => {
 
 			var ext = ctx.queryExt;
-			var time = 0;
 
 			if( ext ) {
 
@@ -649,16 +690,15 @@
 					if (available && !disjoint) {
 
 						var queryTime = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
-						time += queryTime;
+						var time = queryTime;
+						if( ctx.contextWrapper.count ) {
+							log( ctx.contextWrapper.id, ctx.contextWrapper.count, time, ctx.contextWrapper.JavaScriptTime, ctx.contextWrapper.drawArrayCalls, ctx.contextWrapper.drawElementsCalls );
+						}
 						ctx.extQueries.splice( i, 1 );
 
 					}
 
 				} );
-			}
-
-			if( ctx.contextWrapper.count ) {
-				log( ctx.contextWrapper.id, ctx.contextWrapper.count, time, ctx.contextWrapper.JavaScriptTime );
 			}
 
 		} );
