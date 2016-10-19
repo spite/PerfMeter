@@ -549,7 +549,10 @@
 			var original = WebGLRenderingContext.prototype[ method ];
 			originalMethods[ method ] = original;
 			WebGLRenderingContextWrapper.prototype[ method ] = function() {
-				var args = [].slice.call( arguments );
+				var args = new Array(arguments.length);
+				for (var i = 0, l = arguments.length; i < l; i++) {
+					args[i] = arguments[i];
+				}
 				if( !args[ 0 ] ) return;
 				args[ 0 ] = args[ 0 ].uniformLocation;
 				return original.apply( this.context, args );
