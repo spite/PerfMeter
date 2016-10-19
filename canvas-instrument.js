@@ -289,7 +289,7 @@
 	WebGLRenderingContextWrapper.prototype.drawArrays = function() {
 
 		this.drawArrayCalls++;
-		this.updateDrawCount( arguments[ 0 ], arguments[ 1 ] );
+		this.updateDrawCount( arguments[ 0 ], arguments[ 2 ] );
 
 		return WebGLRenderingContext.prototype.drawArrays.apply( this.context, arguments );
 
