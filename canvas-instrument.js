@@ -189,6 +189,8 @@
 
 		Object.keys( WebGLRenderingContext.prototype ).forEach( key => {
 
+ 			// .canvas is weird, so it's directly assigned when creating the wrapper
+
 			if( key !== 'canvas' ) {
 
 				try{
