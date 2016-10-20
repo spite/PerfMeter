@@ -308,10 +308,13 @@
 
 	HTMLCanvasElement.prototype.getContext = function() {
 
-		log( arguments );
-
 		var c = canvasContexts.get( this );
-		if( c ) return c;
+		if( c ) {
+			log( arguments, '(CACHED)' );
+			return c;
+		} else {
+			log( arguments );
+		}
 
 		var context = getContext.apply( this, arguments );
 
