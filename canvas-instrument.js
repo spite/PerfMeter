@@ -42,6 +42,8 @@
 		this.lines = 0;
 		this.points = 0;
 
+		this.startTime = 0;
+
 	}
 
 	function ContextData( contextWrapper ) {
@@ -94,6 +96,18 @@
 
 	}
 
+	Wrapper.prototype.beginProfile = function( fn, args ) {
+
+		this.startTime = performance.now();
+
+	}
+
+	Wrapper.prototype.endProfile = function() {
+
+		this.incrementJavaScriptTime( performance.now() - this.startTime );
+
+	}
+
 	function CanvasRenderingContext2DWrapper( context ) {
 
 		Wrapper.call( this, context );
@@ -116,9 +130,13 @@
 				if( typeof CanvasRenderingContext2D.prototype[ key ] === 'function' ) {
 					CanvasRenderingContext2DWrapper.prototype[ key ] = function() {
 						this.incrementCount();
-						var startTime = performance.now();
-						var res = CanvasRenderingContext2D.prototype[ key ].apply( this.context, arguments );
-						this.incrementJavaScriptTime( performance.now() - startTime );
+						var args = new Array(arguments.length);
+						for (var i = 0, l = arguments.length; i < l; i++) {
+							args[i] = arguments[i];
+						}
+						this.beginProfile( key, args );
+						var res = CanvasRenderingContext2D.prototype[ key ].apply( this.context, args );
+						this.endProfile();
 						return res;
 					}
 				} else {
@@ -197,7 +215,14 @@
 					if( typeof WebGLRenderingContext.prototype[ key ] === 'function' ) {
 						WebGLRenderingContextWrapper.prototype[ key ] = function() {
 							this.incrementCount();
-							return WebGLRenderingContext.prototype[ key ].apply( this.context, arguments );
+							var args = new Array(arguments.length);
+							for (var i = 0, l = arguments.length; i < l; i++) {
+								args[i] = arguments[i];
+							}
+							this.beginProfile( key, args );
+							var res = WebGLRenderingContext.prototype[ key ].apply( this.context, args );
+							this.endProfile();
+							return res;
 						}
 					} else {
 						WebGLRenderingContextWrapper.prototype[ key ] = WebGLRenderingContext.prototype[ key ];
@@ -287,7 +312,10 @@
 		this.drawElementsCalls++;
 		this.updateDrawCount( arguments[ 0 ], arguments[ 1 ] );
 
-		return WebGLRenderingContext.prototype.drawElements.apply( this.context, arguments );
+		this.beginProfile( 'drawElements' );
+		var res = WebGLRenderingContext.prototype.drawElements.apply( this.context, arguments );
+		this.endProfile();
+		return res;
 
 	}
 
@@ -297,7 +325,10 @@
 		this.drawArrayCalls++;
 		this.updateDrawCount( arguments[ 0 ], arguments[ 2 ] );
 
-		return WebGLRenderingContext.prototype.drawArrays.apply( this.context, arguments );
+		this.beginProfile( 'drawElements' );
+		var res = WebGLRenderingContext.prototype.drawArrays.apply( this.context, arguments );
+		this.endProfile();
+		return res;
 
 	}
 
