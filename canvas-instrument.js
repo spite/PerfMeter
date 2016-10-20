@@ -302,7 +302,7 @@
 	}
 
 	var contexts = [];
-	var canvasContexts = new Map();
+	var canvasContexts = new WeakMap();
 
 	var getContext = HTMLCanvasElement.prototype.getContext;
 
