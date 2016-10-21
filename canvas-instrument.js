@@ -874,7 +874,7 @@
 		var queue = rAFQueue.slice( 0 );
 		rAFQueue.length = 0;
 		queue.forEach( rAF => {
-			rAF();
+			rAF( performance.now() );
 		});
 
 		var endTime = performance.now();
