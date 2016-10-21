@@ -174,13 +174,20 @@ function processRequestAnimationFrames( timestamp ){
 							count: ctx.contextWrapper.count,
 						    time: ( time / 1000000 ).toFixed( 2 ),
 						    jstime: ctx.contextWrapper.JavaScriptTime.toFixed(2),
-						    drawArrays: ctx.contextWrapper.drawArrayCalls,
+						    drawArrays: ctx.contextWrapper.drawArraysCalls,
 						    drawElements: ctx.contextWrapper.drawElementsCalls,
+						    instancedDrawArrays: ctx.contextWrapper.instancedDrawArraysCalls,
+						    instancedDrawElements: ctx.contextWrapper.instancedDrawElementsCalls,
 						    points: ctx.contextWrapper.pointsCount,
 						    lines: ctx.contextWrapper.linesCount,
 						    triangles: ctx.contextWrapper.trianglesCount,
+						    instancedPoints: ctx.contextWrapper.instancedPointsCount,
+						    instancedLines: ctx.contextWrapper.instancedLinesCount,
+						    instancedTriangles: ctx.contextWrapper.instancedTrianglesCount,
 						    programs: ctx.contextWrapper.programCount,
-						    usePrograms: ctx.contextWrapper.useProgramCount
+						    usePrograms: ctx.contextWrapper.useProgramCount,
+						    textures: ctx.contextWrapper.textureCount,
+						    bindTextures: ctx.contextWrapper.bindTextureCount
 						} );
 					}
 					ctx.extQueries.splice( i, 1 );

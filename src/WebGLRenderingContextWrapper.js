@@ -17,15 +17,19 @@ function WebGLRenderingContextWrapper( context ){
 	this.useProgramCount = 0;
 	this.bindTextureCount = 0;
 
-	this.drawArrayCalls = 0;
+	this.drawArraysCalls = 0;
 	this.drawElementsCalls = 0;
 
-	this.instancedDrawArrayCalls = 0;
+	this.instancedDrawArraysCalls = 0;
 	this.instancedDrawElementsCalls = 0;
 
 	this.pointsCount = 0;
 	this.linesCount = 0;
 	this.trianglesCount = 0;
+
+	this.instancedPointsCount = 0;
+	this.instancedLinesCount = 0;
+	this.instancedTrianglesCount = 0;
 
 }
 
@@ -42,15 +46,19 @@ WebGLRenderingContextWrapper.prototype.resetFrame = function(){
 	this.useProgramCount = 0;
 	this.bindTextureCount = 0;
 
-	this.drawArrayCalls = 0;
+	this.drawArraysCalls = 0;
 	this.drawElementsCalls = 0;
 
-	this.instancedDrawArrayCalls = 0;
+	this.instancedDrawArraysCalls = 0;
 	this.instancedDrawElementsCalls = 0;
 
 	this.pointsCount = 0;
 	this.linesCount = 0;
 	this.trianglesCount = 0;
+
+	this.instancedPointsCount = 0;
+	this.instancedLinesCount = 0;
+	this.instancedTrianglesCount = 0;
 
 }
 
@@ -111,6 +119,40 @@ WebGLDebugShadersExtensionWrapper.prototype.getTranslatedShaderSource = function
 
 }
 
+function ANGLEInstancedArraysExtensionWrapper( contextWrapper ) {
+
+	this.id = createUUID();
+	this.contextWrapper = contextWrapper;
+	this.extension = WebGLRenderingContext.prototype.getExtension.apply( this.contextWrapper.context, [ 'ANGLE_instanced_arrays' ] );
+
+}
+
+ANGLEInstancedArraysExtensionWrapper.prototype.drawArraysInstancedANGLE = function() {
+
+	this.contextWrapper.instancedDrawArraysCalls++;
+	this.contextWrapper.updateInstancedDrawCount( arguments[ 0 ], arguments[ 2 ] * arguments[ 3 ] );
+	return this.contextWrapper.run( 'drawArraysInstancedANGLE', arguments, _ => {
+		return this.extension.drawArraysInstancedANGLE.apply( this.extension, arguments );
+	} );
+
+}
+
+ANGLEInstancedArraysExtensionWrapper.prototype.drawElementsInstancedANGLE = function() {
+
+	this.contextWrapper.instancedDrawElementsCalls++;
+	this.contextWrapper.updateInstancedDrawCount( arguments[ 0 ], arguments[ 1 ] * arguments[ 4 ] );
+	return this.contextWrapper.run( 'drawElementsInstancedANGLE', arguments, _ => {
+		return this.extension.drawElementsInstancedANGLE.apply( this.extension, arguments );
+	} );
+
+}
+
+ANGLEInstancedArraysExtensionWrapper.prototype.vertexAttribDivisorANGLE = function() {
+
+	return this.extension.vertexAttribDivisorANGLE.apply( this.extension, arguments );
+
+}
+
 WebGLRenderingContextWrapper.prototype.getExtension = function(){
 
 	var extensionName = arguments[ 0 ];
@@ -125,6 +167,10 @@ WebGLRenderingContextWrapper.prototype.getExtension = function(){
 
 			case 'EXT_disjoint_timer_query':
 			return new EXTDisjointTimerQueryExtensionWrapper( this );
+			break;
+
+			case 'ANGLE_instanced_arrays':
+			return new ANGLEInstancedArraysExtensionWrapper( this );
 			break;
 
 		}
@@ -163,6 +209,34 @@ WebGLRenderingContextWrapper.prototype.updateDrawCount = function( mode, count )
 
 };
 
+WebGLRenderingContextWrapper.prototype.updateInstancedDrawCount = function( mode, count ){
+
+	var gl = this.context;
+
+	switch( mode ){
+		case gl.POINTS:
+			this.instancedPointsCount += count;
+			break;
+		case gl.LINE_STRIP:
+			this.instancedLinesCount += count - 1;
+			break;
+		case gl.LINE_LOOP:
+			this.instancedLinesCount += count;
+			break;
+		case gl.LINES:
+			this.instancedLinesCount += count / 2;
+			break;
+		case gl.TRIANGLE_STRIP:
+		case gl.TRIANGLE_FAN:
+			this.instancedTrianglesCount += count - 2;
+			break;
+		case gl.TRIANGLES:
+			this.instancedTrianglesCount += count / 3;
+			break;
+	}
+
+};
+
 WebGLRenderingContextWrapper.prototype.drawElements = function(){
 
 	this.drawElementsCalls++;
@@ -187,7 +261,7 @@ WebGLRenderingContextWrapper.prototype.drawElements = function(){
 
 WebGLRenderingContextWrapper.prototype.drawArrays = function(){
 
-	this.drawArrayCalls++;
+	this.drawArraysCalls++;
 	this.updateDrawCount( arguments[ 0 ], arguments[ 2 ] );
 
 	return this.run( 'drawArrays', arguments, _ => {
@@ -436,6 +510,33 @@ function instrumentWebGLRenderingContext(){
 		this.useProgramCount++;
 		return this.run( 'useProgram', arguments, _ => {
 			return WebGLRenderingContext.prototype.useProgram.apply( this.context, [ arguments[ 0 ] ? arguments[ 0 ].program : null ] );
+		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.createTexture = function(){
+
+		this.textureCount++;
+		return this.run( 'createTexture', arguments, _ => {
+			return WebGLRenderingContext.prototype.createTexture.apply( this.context, arguments );
+		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.deleteTexture = function(){
+
+		this.textureCount--;
+		return this.run( 'deleteTexture', arguments, _ => {
+			return WebGLRenderingContext.prototype.deleteTexture.apply( this.context, arguments );
+		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.bindTexture = function(){
+
+		this.bindTextureCount++;
+		return this.run( 'bindTexture', arguments, _ => {
+			return WebGLRenderingContext.prototype.bindTexture.apply( this.context, arguments );
 		});
 
 	}

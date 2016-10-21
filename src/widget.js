@@ -40,11 +40,18 @@ Canvas time: ${l.jstime} ms
 GPU time: ${l.time} ms
 Programs: ${l.programs}
 usePrograms: ${l.usePrograms}
+Textures: ${l.textures}
+bindTextures: ${l.bindTextures}
 dArrays: ${l.drawArrays}
 dElems: ${l.drawElements}
 Points: ${l.points}
 Lines: ${l.lines}
 Triangles: ${l.triangles}
+idArrays: ${l.instancedDrawArrays}
+idElems: ${l.instancedDrawElements}
+iPoints: ${l.instancedPoints}
+iLines: ${l.instancedLines}
+iTriangles: ${l.instancedTriangles}
 
 `;
 	});

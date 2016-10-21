@@ -83,15 +83,19 @@ function WebGLRenderingContextWrapper(context) {
 	this.useProgramCount = 0;
 	this.bindTextureCount = 0;
 
-	this.drawArrayCalls = 0;
+	this.drawArraysCalls = 0;
 	this.drawElementsCalls = 0;
 
-	this.instancedDrawArrayCalls = 0;
+	this.instancedDrawArraysCalls = 0;
 	this.instancedDrawElementsCalls = 0;
 
 	this.pointsCount = 0;
 	this.linesCount = 0;
 	this.trianglesCount = 0;
+
+	this.instancedPointsCount = 0;
+	this.instancedLinesCount = 0;
+	this.instancedTrianglesCount = 0;
 }
 
 WebGLRenderingContextWrapper.prototype = Object.create(_wrapper.Wrapper.prototype);
@@ -107,15 +111,19 @@ WebGLRenderingContextWrapper.prototype.resetFrame = function () {
 	this.useProgramCount = 0;
 	this.bindTextureCount = 0;
 
-	this.drawArrayCalls = 0;
+	this.drawArraysCalls = 0;
 	this.drawElementsCalls = 0;
 
-	this.instancedDrawArrayCalls = 0;
+	this.instancedDrawArraysCalls = 0;
 	this.instancedDrawElementsCalls = 0;
 
 	this.pointsCount = 0;
 	this.linesCount = 0;
 	this.trianglesCount = 0;
+
+	this.instancedPointsCount = 0;
+	this.instancedLinesCount = 0;
+	this.instancedTrianglesCount = 0;
 };
 
 function cloneWebGLRenderingContextPrototype() {
@@ -176,8 +184,42 @@ WebGLDebugShadersExtensionWrapper.prototype.getTranslatedShaderSource = function
 	return this.extension.getTranslatedShaderSource(shaderWrapper.shader);
 };
 
+function ANGLEInstancedArraysExtensionWrapper(contextWrapper) {
+
+	this.id = (0, _utils.createUUID)();
+	this.contextWrapper = contextWrapper;
+	this.extension = WebGLRenderingContext.prototype.getExtension.apply(this.contextWrapper.context, ['ANGLE_instanced_arrays']);
+}
+
+ANGLEInstancedArraysExtensionWrapper.prototype.drawArraysInstancedANGLE = function () {
+	var _this2 = this,
+	    _arguments = arguments;
+
+	this.contextWrapper.instancedDrawArraysCalls++;
+	this.contextWrapper.updateInstancedDrawCount(arguments[0], arguments[2] * arguments[3]);
+	return this.contextWrapper.run('drawArraysInstancedANGLE', arguments, function (_) {
+		return _this2.extension.drawArraysInstancedANGLE.apply(_this2.extension, _arguments);
+	});
+};
+
+ANGLEInstancedArraysExtensionWrapper.prototype.drawElementsInstancedANGLE = function () {
+	var _this3 = this,
+	    _arguments2 = arguments;
+
+	this.contextWrapper.instancedDrawElementsCalls++;
+	this.contextWrapper.updateInstancedDrawCount(arguments[0], arguments[1] * arguments[4]);
+	return this.contextWrapper.run('drawElementsInstancedANGLE', arguments, function (_) {
+		return _this3.extension.drawElementsInstancedANGLE.apply(_this3.extension, _arguments2);
+	});
+};
+
+ANGLEInstancedArraysExtensionWrapper.prototype.vertexAttribDivisorANGLE = function () {
+
+	return this.extension.vertexAttribDivisorANGLE.apply(this.extension, arguments);
+};
+
 WebGLRenderingContextWrapper.prototype.getExtension = function () {
-	var _this2 = this;
+	var _this4 = this;
 
 	var extensionName = arguments[0];
 
@@ -186,16 +228,20 @@ WebGLRenderingContextWrapper.prototype.getExtension = function () {
 		switch (extensionName) {
 
 			case 'WEBGL_debug_shaders':
-				return new WebGLDebugShadersExtensionWrapper(_this2);
+				return new WebGLDebugShadersExtensionWrapper(_this4);
 				break;
 
 			case 'EXT_disjoint_timer_query':
-				return new EXTDisjointTimerQueryExtensionWrapper(_this2);
+				return new EXTDisjointTimerQueryExtensionWrapper(_this4);
+				break;
+
+			case 'ANGLE_instanced_arrays':
+				return new ANGLEInstancedArraysExtensionWrapper(_this4);
 				break;
 
 		}
 
-		return _this2.context.getExtension(extensionName);
+		return _this4.context.getExtension(extensionName);
 	});
 };
 
@@ -226,9 +272,36 @@ WebGLRenderingContextWrapper.prototype.updateDrawCount = function (mode, count) 
 	}
 };
 
+WebGLRenderingContextWrapper.prototype.updateInstancedDrawCount = function (mode, count) {
+
+	var gl = this.context;
+
+	switch (mode) {
+		case gl.POINTS:
+			this.instancedPointsCount += count;
+			break;
+		case gl.LINE_STRIP:
+			this.instancedLinesCount += count - 1;
+			break;
+		case gl.LINE_LOOP:
+			this.instancedLinesCount += count;
+			break;
+		case gl.LINES:
+			this.instancedLinesCount += count / 2;
+			break;
+		case gl.TRIANGLE_STRIP:
+		case gl.TRIANGLE_FAN:
+			this.instancedTrianglesCount += count - 2;
+			break;
+		case gl.TRIANGLES:
+			this.instancedTrianglesCount += count / 3;
+			break;
+	}
+};
+
 WebGLRenderingContextWrapper.prototype.drawElements = function () {
-	var _this3 = this,
-	    _arguments = arguments;
+	var _this5 = this,
+	    _arguments3 = arguments;
 
 	this.drawElementsCalls++;
 	this.updateDrawCount(arguments[0], arguments[1]);
@@ -240,7 +313,7 @@ WebGLRenderingContextWrapper.prototype.drawElements = function () {
   ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
   this.drawQueries.push( query );*/
 
-		var res = WebGLRenderingContext.prototype.drawElements.apply(_this3.context, _arguments);
+		var res = WebGLRenderingContext.prototype.drawElements.apply(_this5.context, _arguments3);
 
 		//ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
 
@@ -249,10 +322,10 @@ WebGLRenderingContextWrapper.prototype.drawElements = function () {
 };
 
 WebGLRenderingContextWrapper.prototype.drawArrays = function () {
-	var _this4 = this,
-	    _arguments2 = arguments;
+	var _this6 = this,
+	    _arguments4 = arguments;
 
-	this.drawArrayCalls++;
+	this.drawArraysCalls++;
 	this.updateDrawCount(arguments[0], arguments[2]);
 
 	return this.run('drawArrays', arguments, function (_) {
@@ -262,7 +335,7 @@ WebGLRenderingContextWrapper.prototype.drawArrays = function () {
   ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
   this.drawQueries.push( query );*/
 
-		var res = WebGLRenderingContext.prototype.drawArrays.apply(_this4.context, _arguments2);
+		var res = WebGLRenderingContext.prototype.drawArrays.apply(_this6.context, _arguments4);
 
 		//ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
 
@@ -317,7 +390,7 @@ function WebGLProgramWrapper(contextWrapper) {
 }
 
 WebGLProgramWrapper.prototype.attachShader = function () {
-	var _this5 = this;
+	var _this7 = this;
 
 	var shaderWrapper = arguments[0];
 
@@ -325,12 +398,12 @@ WebGLProgramWrapper.prototype.attachShader = function () {
 	if (shaderWrapper.type == this.contextWrapper.context.FRAGMENT_SHADER) this.fragmentShaderWrapper = shaderWrapper;
 
 	return this.contextWrapper.run('attachShader', arguments, function (_) {
-		return WebGLRenderingContext.prototype.attachShader.apply(_this5.contextWrapper.context, [_this5.program, shaderWrapper.shader]);
+		return WebGLRenderingContext.prototype.attachShader.apply(_this7.contextWrapper.context, [_this7.program, shaderWrapper.shader]);
 	});
 };
 
 WebGLProgramWrapper.prototype.highlight = function () {
-	var _this6 = this;
+	var _this8 = this;
 
 	detachShader.apply(this.contextWrapper.context, [this.program, this.fragmentShaderWrapper.shader]);
 
@@ -345,84 +418,84 @@ WebGLProgramWrapper.prototype.highlight = function () {
 	WebGLRenderingContext.prototype.linkProgram.apply(this.contextWrapper.context, [this.program]);
 
 	Object.keys(this.uniformLocations).forEach(function (name) {
-		_this6.uniformLocations[name].getUniformLocation();
+		_this8.uniformLocations[name].getUniformLocation();
 	});
 };
 
 function instrumentWebGLRenderingContext() {
 
 	WebGLRenderingContextWrapper.prototype.createShader = function () {
-		var _this7 = this,
-		    _arguments3 = arguments;
+		var _this9 = this,
+		    _arguments5 = arguments;
 
 		log('create shader');
 		return this.run('createShader', arguments, function (_) {
-			return new WebGLShaderWrapper(_this7, _arguments3[0]);
+			return new WebGLShaderWrapper(_this9, _arguments5[0]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.shaderSource = function () {
-		var _arguments4 = arguments;
+		var _arguments6 = arguments;
 
 
 		return this.run('shaderSource', arguments, function (_) {
-			return _arguments4[0].shaderSource(_arguments4[1]);
+			return _arguments6[0].shaderSource(_arguments6[1]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.compileShader = function () {
-		var _this8 = this,
-		    _arguments5 = arguments;
+		var _this10 = this,
+		    _arguments7 = arguments;
 
 		return this.run('compileShader', arguments, function (_) {
-			return WebGLRenderingContext.prototype.compileShader.apply(_this8.context, [_arguments5[0].shader]);
+			return WebGLRenderingContext.prototype.compileShader.apply(_this10.context, [_arguments7[0].shader]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getShaderParameter = function () {
-		var _this9 = this,
-		    _arguments6 = arguments;
+		var _this11 = this,
+		    _arguments8 = arguments;
 
 		return this.run('getShaderParameter', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getShaderParameter.apply(_this9.context, [_arguments6[0].shader, _arguments6[1]]);
+			return WebGLRenderingContext.prototype.getShaderParameter.apply(_this11.context, [_arguments8[0].shader, _arguments8[1]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getShaderInfoLog = function () {
-		var _this10 = this,
-		    _arguments7 = arguments;
+		var _this12 = this,
+		    _arguments9 = arguments;
 
 		return this.run('getShaderInfoLog', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getShaderInfoLog.apply(_this10.context, [_arguments7[0].shader]);
+			return WebGLRenderingContext.prototype.getShaderInfoLog.apply(_this12.context, [_arguments9[0].shader]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.deleteShader = function () {
-		var _this11 = this,
-		    _arguments8 = arguments;
+		var _this13 = this,
+		    _arguments10 = arguments;
 
 		return this.run('deleteShader', arguments, function (_) {
-			return WebGLRenderingContext.prototype.deleteShader.apply(_this11.context, [_arguments8[0].shader]);
+			return WebGLRenderingContext.prototype.deleteShader.apply(_this13.context, [_arguments10[0].shader]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.createProgram = function () {
-		var _this12 = this;
+		var _this14 = this;
 
 		log('create program');
 		this.programCount++;
 		return this.run('createProgram', arguments, function (_) {
-			return new WebGLProgramWrapper(_this12);
+			return new WebGLProgramWrapper(_this14);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.deleteProgram = function (programWrapper) {
-		var _this13 = this;
+		var _this15 = this;
 
 		this.incrementCount();
 		this.programCount--;
 		return this.run('deleteProgram', arguments, function (_) {
-			return WebGLRenderingContext.prototype.deleteProgram.apply(_this13.context, [programWrapper.program]);
+			return WebGLRenderingContext.prototype.deleteProgram.apply(_this15.context, [programWrapper.program]);
 		});
 	};
 
@@ -432,84 +505,114 @@ function instrumentWebGLRenderingContext() {
 	};
 
 	WebGLRenderingContextWrapper.prototype.linkProgram = function () {
-		var _this14 = this,
-		    _arguments9 = arguments;
+		var _this16 = this,
+		    _arguments11 = arguments;
 
 		return this.run('linkProgram', arguments, function (_) {
-			return WebGLRenderingContext.prototype.linkProgram.apply(_this14.context, [_arguments9[0].program]);
+			return WebGLRenderingContext.prototype.linkProgram.apply(_this16.context, [_arguments11[0].program]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getProgramParameter = function () {
-		var _this15 = this,
-		    _arguments10 = arguments;
+		var _this17 = this,
+		    _arguments12 = arguments;
 
 		return this.run('getProgramParameter', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getProgramParameter.apply(_this15.context, [_arguments10[0].program, _arguments10[1]]);
+			return WebGLRenderingContext.prototype.getProgramParameter.apply(_this17.context, [_arguments12[0].program, _arguments12[1]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getProgramInfoLog = function () {
-		var _this16 = this,
-		    _arguments11 = arguments;
+		var _this18 = this,
+		    _arguments13 = arguments;
 
 		return this.run('getProgramInfoLog', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getProgramInfoLog.apply(_this16.context, [_arguments11[0].program]);
+			return WebGLRenderingContext.prototype.getProgramInfoLog.apply(_this18.context, [_arguments13[0].program]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getActiveAttrib = function () {
-		var _this17 = this,
-		    _arguments12 = arguments;
+		var _this19 = this,
+		    _arguments14 = arguments;
 
 		return this.run('getActiveAttrib', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getActiveAttrib.apply(_this17.context, [_arguments12[0].program, _arguments12[1]]);
+			return WebGLRenderingContext.prototype.getActiveAttrib.apply(_this19.context, [_arguments14[0].program, _arguments14[1]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getAttribLocation = function () {
-		var _this18 = this,
-		    _arguments13 = arguments;
+		var _this20 = this,
+		    _arguments15 = arguments;
 
 		return this.run('getAttribLocation', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getAttribLocation.apply(_this18.context, [_arguments13[0].program, _arguments13[1]]);
+			return WebGLRenderingContext.prototype.getAttribLocation.apply(_this20.context, [_arguments15[0].program, _arguments15[1]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.bindAttribLocation = function () {
-		var _this19 = this,
-		    _arguments14 = arguments;
+		var _this21 = this,
+		    _arguments16 = arguments;
 
 		return this.run('bindAttribLocation', arguments, function (_) {
-			return WebGLRenderingContext.prototype.bindAttribLocation.apply(_this19.context, [_arguments14[0].program, _arguments14[1], _arguments14[2]]);
+			return WebGLRenderingContext.prototype.bindAttribLocation.apply(_this21.context, [_arguments16[0].program, _arguments16[1], _arguments16[2]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getActiveUniform = function () {
-		var _this20 = this,
-		    _arguments15 = arguments;
+		var _this22 = this,
+		    _arguments17 = arguments;
 
 		return this.run('getActiveUniform', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getActiveUniform.apply(_this20.context, [_arguments15[0].program, _arguments15[1]]);
+			return WebGLRenderingContext.prototype.getActiveUniform.apply(_this22.context, [_arguments17[0].program, _arguments17[1]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getUniformLocation = function () {
-		var _this21 = this,
-		    _arguments16 = arguments;
+		var _this23 = this,
+		    _arguments18 = arguments;
 
 		return this.run('getUniformLocation', arguments, function (_) {
-			return new WebGLUniformLocationWrapper(_this21.context, _arguments16[0], _arguments16[1]);
+			return new WebGLUniformLocationWrapper(_this23.context, _arguments18[0], _arguments18[1]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.useProgram = function () {
-		var _this22 = this,
-		    _arguments17 = arguments;
+		var _this24 = this,
+		    _arguments19 = arguments;
 
 		this.useProgramCount++;
 		return this.run('useProgram', arguments, function (_) {
-			return WebGLRenderingContext.prototype.useProgram.apply(_this22.context, [_arguments17[0] ? _arguments17[0].program : null]);
+			return WebGLRenderingContext.prototype.useProgram.apply(_this24.context, [_arguments19[0] ? _arguments19[0].program : null]);
+		});
+	};
+
+	WebGLRenderingContextWrapper.prototype.createTexture = function () {
+		var _this25 = this,
+		    _arguments20 = arguments;
+
+		this.textureCount++;
+		return this.run('createTexture', arguments, function (_) {
+			return WebGLRenderingContext.prototype.createTexture.apply(_this25.context, _arguments20);
+		});
+	};
+
+	WebGLRenderingContextWrapper.prototype.deleteTexture = function () {
+		var _this26 = this,
+		    _arguments21 = arguments;
+
+		this.textureCount--;
+		return this.run('deleteTexture', arguments, function (_) {
+			return WebGLRenderingContext.prototype.deleteTexture.apply(_this26.context, _arguments21);
+		});
+	};
+
+	WebGLRenderingContextWrapper.prototype.bindTexture = function () {
+		var _this27 = this,
+		    _arguments22 = arguments;
+
+		this.bindTextureCount++;
+		return this.run('bindTexture', arguments, function (_) {
+			return WebGLRenderingContext.prototype.bindTexture.apply(_this27.context, _arguments22);
 		});
 	};
 
@@ -523,7 +626,7 @@ function instrumentWebGLRenderingContext() {
 		originalMethods[method] = original;
 
 		WebGLRenderingContextWrapper.prototype[method] = function () {
-			var _this23 = this;
+			var _this28 = this;
 
 			var args = new Array(arguments.length);
 			for (var i = 0, l = arguments.length; i < l; i++) {
@@ -532,7 +635,7 @@ function instrumentWebGLRenderingContext() {
 			if (!args[0]) return;
 			args[0] = args[0].uniformLocation;
 			return this.run(method, args, function (_) {
-				return original.apply(_this23.context, args);
+				return original.apply(_this28.context, args);
 			});
 		};
 	});
@@ -819,13 +922,20 @@ function processRequestAnimationFrames(timestamp) {
 							count: ctx.contextWrapper.count,
 							time: (time / 1000000).toFixed(2),
 							jstime: ctx.contextWrapper.JavaScriptTime.toFixed(2),
-							drawArrays: ctx.contextWrapper.drawArrayCalls,
+							drawArrays: ctx.contextWrapper.drawArraysCalls,
 							drawElements: ctx.contextWrapper.drawElementsCalls,
+							instancedDrawArrays: ctx.contextWrapper.instancedDrawArraysCalls,
+							instancedDrawElements: ctx.contextWrapper.instancedDrawElementsCalls,
 							points: ctx.contextWrapper.pointsCount,
 							lines: ctx.contextWrapper.linesCount,
 							triangles: ctx.contextWrapper.trianglesCount,
+							instancedPoints: ctx.contextWrapper.instancedPointsCount,
+							instancedLines: ctx.contextWrapper.instancedLinesCount,
+							instancedTriangles: ctx.contextWrapper.instancedTrianglesCount,
 							programs: ctx.contextWrapper.programCount,
-							usePrograms: ctx.contextWrapper.useProgramCount
+							usePrograms: ctx.contextWrapper.useProgramCount,
+							textures: ctx.contextWrapper.textureCount,
+							bindTextures: ctx.contextWrapper.bindTextureCount
 						});
 					}
 					ctx.extQueries.splice(i, 1);
@@ -910,7 +1020,7 @@ function updateUI(e) {
 	var str = 'Framerate: ' + d.framerate.toFixed(2) + ' FPS\n\tFrame JS time: ' + d.frameTime.toFixed(2) + ' ms\n\n\t';
 
 	d.logs.forEach(function (l) {
-		str += '<b>Canvas</b>\nID: ' + l.id + '\nCount: ' + l.count + '\nCanvas time: ' + l.jstime + ' ms\n<b>WebGL</b>\nGPU time: ' + l.time + ' ms\nPrograms: ' + l.programs + '\nusePrograms: ' + l.usePrograms + '\ndArrays: ' + l.drawArrays + '\ndElems: ' + l.drawElements + '\nPoints: ' + l.points + '\nLines: ' + l.lines + '\nTriangles: ' + l.triangles + '\n\n';
+		str += '<b>Canvas</b>\nID: ' + l.id + '\nCount: ' + l.count + '\nCanvas time: ' + l.jstime + ' ms\n<b>WebGL</b>\nGPU time: ' + l.time + ' ms\nPrograms: ' + l.programs + '\nusePrograms: ' + l.usePrograms + '\nTextures: ' + l.textures + '\nbindTextures: ' + l.bindTextures + '\ndArrays: ' + l.drawArrays + '\ndElems: ' + l.drawElements + '\nPoints: ' + l.points + '\nLines: ' + l.lines + '\nTriangles: ' + l.triangles + '\nidArrays: ' + l.instancedDrawArrays + '\nidElems: ' + l.instancedDrawElements + '\niPoints: ' + l.instancedPoints + '\niLines: ' + l.instancedLines + '\niTriangles: ' + l.instancedTriangles + '\n\n';
 	});
 
 	text.innerHTML = str;
