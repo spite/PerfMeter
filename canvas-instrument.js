@@ -8,7 +8,7 @@
 			return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
 		}
 
-		return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+		return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
 
 	}
 
@@ -117,14 +117,17 @@
 
 	Wrapper.prototype.beginProfile = function( fn, args ){
 
-		this.log.push( fn );
-		this.startTime = performance.now();
+		var t = performance.now();
+		this.log.push( { function: fn, arguments: args, start: t, end: 0 } );
+		this.startTime = t;
 
 	}
 
 	Wrapper.prototype.endProfile = function(){
 
-		this.incrementJavaScriptTime( performance.now() - this.startTime );
+		var t = performance.now();
+		this.log[ this.log.length - 1 ].end = t;
+		this.incrementJavaScriptTime( t - this.startTime );
 
 	}
 
@@ -177,6 +180,9 @@
 
 		this.queryStack = [];
 		this.activeQuery = null;
+		this.queryExt = null;
+
+		this.drawQueries = [];
 
 		this.programCount = 0;
 		this.textureCount = 0;
@@ -328,7 +334,18 @@
 		this.updateDrawCount( arguments[ 0 ], arguments[ 1 ] );
 
 		return this.run( 'drawElements', arguments, _ => {
-			return WebGLRenderingContext.prototype.drawElements.apply( this.context, arguments );
+
+			/*var ext = this.queryExt;
+			var query = ext.createQueryEXT();
+			ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
+			this.drawQueries.push( query );*/
+
+			var res = WebGLRenderingContext.prototype.drawElements.apply( this.context, arguments );
+
+			//ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
+
+			return res;
+
 		});
 
 	}
@@ -339,7 +356,18 @@
 		this.updateDrawCount( arguments[ 0 ], arguments[ 2 ] );
 
 		return this.run( 'drawArrays', arguments, _ => {
-			return WebGLRenderingContext.prototype.drawArrays.apply( this.context, arguments );
+
+			/*var ext = this.queryExt;
+			var query = ext.createQueryEXT();
+			ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
+			this.drawQueries.push( query );*/
+
+			var res = WebGLRenderingContext.prototype.drawArrays.apply( this.context, arguments );
+
+			//ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
+
+			return res;
+
 		});
 
 	}
@@ -350,6 +378,8 @@
 	var getContext = HTMLCanvasElement.prototype.getContext;
 
 	HTMLCanvasElement.prototype.getContext = function(){
+
+		setupUI();
 
 		var c = canvasContexts.get( this );
 		if( c ){
@@ -366,7 +396,8 @@
 			var wrapper = new WebGLRenderingContextWrapper( context );
 			wrapper.canvas = this;
 			var cData = new ContextData( wrapper );
-			cData.queryExt = wrapper.getExtension( 'EXT_disjoint_timer_query' )
+			cData.queryExt = wrapper.getExtension( 'EXT_disjoint_timer_query' );
+			wrapper.queryExt = cData.queryExt;
 			contexts.push( cData );
 			canvasContexts.set( this, wrapper );
 			return wrapper;
@@ -386,7 +417,6 @@
 
 		canvasContexts.set( this, context );
 		return context;
-
 
 	}
 
@@ -773,11 +803,47 @@
 	}
 
 	//
+	// This is the UI
+	//
+
+	var text;
+	var uiIsSetup = false;
+
+	function setupUI() {
+
+		if( uiIsSetup ) return;
+		uiIsSetup = true;
+
+		text = document.createElement( 'div' );
+		text.setAttribute( 'id', 'perfmeter-panel' );
+
+		var fileref = document.createElement("link");
+		fileref.rel = "stylesheet";
+		fileref.type = "text/css";
+		fileref.href = settings.cssPath;
+
+		window.document.getElementsByTagName("head")[0].appendChild(fileref);
+
+		if( !window.document.body ) {
+			window.addEventListener( 'load', function() {
+				window.document.body.appendChild( text );
+			} );
+		} else {
+			window.document.body.appendChild( text );
+		}
+
+	}
+
+	//
 	// This is the rAF queue processing
 	//
 
 	var originalRequestAnimationFrame = window.requestAnimationFrame;
 	var rAFQueue = [];
+	var frameCount = 0;
+	var frameId = 0;
+	var framerate = 0;
+	var lastTime = 0;
 
 	window.requestAnimationFrame = function( c ){
 
@@ -814,6 +880,17 @@
 		var endTime = performance.now();
 		var frameTime = endTime - startTime;
 
+		frameCount++;
+		if( endTime > lastTime + 1000 ) {
+			framerate = frameCount * 1000 / ( endTime - lastTime );
+			frameCount = 0;
+			lastTime = endTime;
+		}
+
+		frameId++;
+
+		var logs = [];
+
 		contexts.forEach( ctx => {
 
 			var ext = ctx.queryExt;
@@ -832,20 +909,51 @@
 						var queryTime = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
 						var time = queryTime;
 						if (ctx.contextWrapper.count ){
-							log( ctx.contextWrapper.id, ctx.contextWrapper.count,
-							    time, ctx.contextWrapper.JavaScriptTime,
-							    ctx.contextWrapper.drawArrayCalls, ctx.contextWrapper.drawElementsCalls,
-							    ctx.contextWrapper.pointsCount, ctx.contextWrapper.linesCount, ctx.contextWrapper.trianglesCount
-							);
+							logs.push( {
+								id: ctx.contextWrapper.id,
+								count: ctx.contextWrapper.count,
+							    time: ( time / 1000000 ).toFixed( 2 ),
+							    jstime: ctx.contextWrapper.JavaScriptTime.toFixed(2),
+							    drawArrays: ctx.contextWrapper.drawArrayCalls,
+							    drawElements: ctx.contextWrapper.drawElementsCalls,
+							    points: ctx.contextWrapper.pointsCount,
+							    lines: ctx.contextWrapper.linesCount,
+							    triangles: ctx.contextWrapper.trianglesCount
+							} );
 						}
 						ctx.extQueries.splice( i, 1 );
 
 					}
 
 				});
+
+				/*ctx.contextWrapper.drawQueries.forEach( ( query, i ) => {
+
+					var available = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_AVAILABLE_EXT );
+					var disjoint = ctx.contextWrapper.context.getParameter( ext.GPU_DISJOINT_EXT );
+
+					if (available && !disjoint){
+
+						var queryTime = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
+						var time = queryTime;
+						if (ctx.contextWrapper.count ){
+							log( 'Draw ', time );
+						}
+						ctx.contextWrapper.drawQueries.splice( i, 1 );
+
+					}
+
+				});*/
+
 			}
 
 		});
+
+		var str = `Framerate: ${framerate.toFixed(2)}<br/>Frame JS time: ${frameTime.toFixed(2)}<br/><br/>`;
+		logs.forEach( l => {
+			str += `ID: ${l.id}<br/>Count: ${l.count}<br/>GPU time: ${l.time}<br/>Canvas time: ${l.jstime}<br/>dArrays: ${l.drawArrays}<br/>dElems: ${l.drawElements}<br/>Points: ${l.points}<br/>Lines: ${l.lines}<br/>Triangles: ${l.triangles}<br/><br/>`;
+		});
+		if( text ) text.innerHTML = str;
 
 		originalRequestAnimationFrame( processRequestAnimationFrames );
 
