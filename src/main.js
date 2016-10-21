@@ -46,6 +46,8 @@ function ContextData( contextWrapper ){
 	this.contextWrapper = contextWrapper;
 	this.extQueries = [];
 
+	this.metrics = {}
+
 }
 
 var contexts = [];
@@ -149,8 +151,6 @@ function processRequestAnimationFrames( timestamp ){
 
 	frameId++;
 
-	var logs = [];
-
 	contexts.forEach( ctx => {
 
 		var ext = ctx.queryExt;
@@ -169,7 +169,7 @@ function processRequestAnimationFrames( timestamp ){
 					var queryTime = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
 					var time = queryTime;
 					if (ctx.contextWrapper.count ){
-						logs.push( {
+						ctx.metrics = {
 							id: ctx.contextWrapper.id,
 							count: ctx.contextWrapper.count,
 						    time: ( time / 1000000 ).toFixed( 2 ),
@@ -188,7 +188,7 @@ function processRequestAnimationFrames( timestamp ){
 						    usePrograms: ctx.contextWrapper.useProgramCount,
 						    textures: ctx.contextWrapper.textureCount,
 						    bindTextures: ctx.contextWrapper.bindTextureCount
-						} );
+						};
 					}
 					ctx.extQueries.splice( i, 1 );
 
@@ -217,6 +217,13 @@ function processRequestAnimationFrames( timestamp ){
 		}
 
 	});
+
+	var logs = [];
+	contexts.forEach( ctx => {
+		if( ctx.metrics.count ) {
+			logs.push( ctx.metrics )
+		}
+	} );
 
 	var e = new CustomEvent( 'perfmeter-framedata', {
 		detail: {
