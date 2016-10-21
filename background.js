@@ -47,7 +47,7 @@ if( !window[ '${extensionId}_instrumented' ] ) {
 
 Promise.all( [
 	loadSettings().then( res => { settings = res; notifySettings(); } ),
-	fetch( chrome.extension.getURL( 'canvas-instrument.js' ) ).then( res => res.text() ).then( res => intrumentScript = res ),
+	fetch( chrome.extension.getURL( './src/lib.js' ) ).then( res => res.text() ).then( res => intrumentScript = res ),
 	fetch( chrome.extension.getURL( 'script-common.js' ) ).then( res => res.text() ).then( res => commonScript = res ),
 ] ).then( () => {
 	buildScript();
