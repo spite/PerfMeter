@@ -42,6 +42,8 @@ Programs: ${l.programs}
 usePrograms: ${l.usePrograms}
 Textures: ${l.textures}
 bindTextures: ${l.bindTextures}
+Framebuffers: ${l.framebuffers}
+bindFramebuffers: ${l.bindFramebuffers}
 dArrays: ${l.drawArrays}
 dElems: ${l.drawElements}
 Points: ${l.points}

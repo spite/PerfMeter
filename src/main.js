@@ -168,26 +168,31 @@ function processRequestAnimationFrames( timestamp ){
 
 					var queryTime = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
 					var time = queryTime;
-					if (ctx.contextWrapper.count ){
+
+					var wrapper = ctx.contextWrapper;
+
+					if (wrapper.count ){
 						ctx.metrics = {
-							id: ctx.contextWrapper.id,
-							count: ctx.contextWrapper.count,
-						    time: ( time / 1000000 ).toFixed( 2 ),
-						    jstime: ctx.contextWrapper.JavaScriptTime.toFixed(2),
-						    drawArrays: ctx.contextWrapper.drawArraysCalls,
-						    drawElements: ctx.contextWrapper.drawElementsCalls,
-						    instancedDrawArrays: ctx.contextWrapper.instancedDrawArraysCalls,
-						    instancedDrawElements: ctx.contextWrapper.instancedDrawElementsCalls,
-						    points: ctx.contextWrapper.pointsCount,
-						    lines: ctx.contextWrapper.linesCount,
-						    triangles: ctx.contextWrapper.trianglesCount,
-						    instancedPoints: ctx.contextWrapper.instancedPointsCount,
-						    instancedLines: ctx.contextWrapper.instancedLinesCount,
-						    instancedTriangles: ctx.contextWrapper.instancedTrianglesCount,
-						    programs: ctx.contextWrapper.programCount,
-						    usePrograms: ctx.contextWrapper.useProgramCount,
-						    textures: ctx.contextWrapper.textureCount,
-						    bindTextures: ctx.contextWrapper.bindTextureCount
+							id: wrapper.id,
+							count: wrapper.count,
+							time: ( time / 1000000 ).toFixed( 2 ),
+							jstime: wrapper.JavaScriptTime.toFixed(2),
+							drawArrays: wrapper.drawArraysCalls,
+							drawElements: wrapper.drawElementsCalls,
+							instancedDrawArrays: wrapper.instancedDrawArraysCalls,
+							instancedDrawElements: wrapper.instancedDrawElementsCalls,
+							points: wrapper.pointsCount,
+							lines: wrapper.linesCount,
+							triangles: wrapper.trianglesCount,
+							instancedPoints: wrapper.instancedPointsCount,
+							instancedLines: wrapper.instancedLinesCount,
+							instancedTriangles: wrapper.instancedTrianglesCount,
+							programs: wrapper.programCount,
+							usePrograms: wrapper.useProgramCount,
+							textures: wrapper.textureCount,
+							bindTextures: wrapper.bindTextureCount,
+							framebuffers: wrapper.framebufferCount,
+							bindFramebuffers: wrapper.bindFramebufferCount
 						};
 					}
 					ctx.extQueries.splice( i, 1 );
@@ -227,10 +232,10 @@ function processRequestAnimationFrames( timestamp ){
 
 	var e = new CustomEvent( 'perfmeter-framedata', {
 		detail: {
-			frameTime: frameId,
-			framerate: framerate,
-			frameTime: frameTime,
-			logs: logs
+			frameId,
+			framerate,
+			frameTime,
+			logs
 		}
 	} );
 	window.dispatchEvent( e );

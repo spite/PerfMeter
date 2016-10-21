@@ -13,9 +13,11 @@ function WebGLRenderingContextWrapper( context ){
 
 	this.programCount = 0;
 	this.textureCount = 0;
+	this.framebufferCount = 0;
 
 	this.useProgramCount = 0;
 	this.bindTextureCount = 0;
+	this.bindFramebufferCount = 0;
 
 	this.drawArraysCalls = 0;
 	this.drawElementsCalls = 0;
@@ -45,6 +47,7 @@ WebGLRenderingContextWrapper.prototype.resetFrame = function(){
 
 	this.useProgramCount = 0;
 	this.bindTextureCount = 0;
+	this.bindFramebufferCount = 0;
 
 	this.drawArraysCalls = 0;
 	this.drawElementsCalls = 0;
@@ -537,6 +540,33 @@ function instrumentWebGLRenderingContext(){
 		this.bindTextureCount++;
 		return this.run( 'bindTexture', arguments, _ => {
 			return WebGLRenderingContext.prototype.bindTexture.apply( this.context, arguments );
+		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.createFramebuffer = function() {
+
+		this.framebufferCount++;
+		return this.run( 'createFramebuffer', arguments, _ => {
+			return WebGLRenderingContext.prototype.createFramebuffer.apply( this.context, arguments );
+		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.deleteFramebuffer = function() {
+
+		this.framebufferCount--;
+		return this.run( 'deleteFramebuffer', arguments, _ => {
+			return WebGLRenderingContext.prototype.deleteFramebuffer.apply( this.context, arguments );
+		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.bindFramebuffer = function() {
+
+		this.bindFramebufferCount++;
+		return this.run( 'bindFramebuffer', arguments, _ => {
+			return WebGLRenderingContext.prototype.bindFramebuffer.apply( this.context, arguments );
 		});
 
 	}

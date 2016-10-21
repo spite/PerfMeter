@@ -79,9 +79,11 @@ function WebGLRenderingContextWrapper(context) {
 
 	this.programCount = 0;
 	this.textureCount = 0;
+	this.framebufferCount = 0;
 
 	this.useProgramCount = 0;
 	this.bindTextureCount = 0;
+	this.bindFramebufferCount = 0;
 
 	this.drawArraysCalls = 0;
 	this.drawElementsCalls = 0;
@@ -110,6 +112,7 @@ WebGLRenderingContextWrapper.prototype.resetFrame = function () {
 
 	this.useProgramCount = 0;
 	this.bindTextureCount = 0;
+	this.bindFramebufferCount = 0;
 
 	this.drawArraysCalls = 0;
 	this.drawElementsCalls = 0;
@@ -616,6 +619,36 @@ function instrumentWebGLRenderingContext() {
 		});
 	};
 
+	WebGLRenderingContextWrapper.prototype.createFramebuffer = function () {
+		var _this28 = this,
+		    _arguments23 = arguments;
+
+		this.framebufferCount++;
+		return this.run('createFramebuffer', arguments, function (_) {
+			return WebGLRenderingContext.prototype.createFramebuffer.apply(_this28.context, _arguments23);
+		});
+	};
+
+	WebGLRenderingContextWrapper.prototype.deleteFramebuffer = function () {
+		var _this29 = this,
+		    _arguments24 = arguments;
+
+		this.framebufferCount--;
+		return this.run('deleteFramebuffer', arguments, function (_) {
+			return WebGLRenderingContext.prototype.deleteFramebuffer.apply(_this29.context, _arguments24);
+		});
+	};
+
+	WebGLRenderingContextWrapper.prototype.bindFramebuffer = function () {
+		var _this30 = this,
+		    _arguments25 = arguments;
+
+		this.bindFramebufferCount++;
+		return this.run('bindFramebuffer', arguments, function (_) {
+			return WebGLRenderingContext.prototype.bindFramebuffer.apply(_this30.context, _arguments25);
+		});
+	};
+
 	var methods = ['uniform1f', 'uniform1fv', 'uniform1i', 'uniform1iv', 'uniform2f', 'uniform2fv', 'uniform2i', 'uniform2iv', 'uniform3f', 'uniform3fv', 'uniform3i', 'uniform3iv', 'uniform4f', 'uniform4fv', 'uniform4i', 'uniform4iv', 'uniformMatrix2fv', 'uniformMatrix3fv', 'uniformMatrix4fv'];
 
 	var originalMethods = {};
@@ -626,7 +659,7 @@ function instrumentWebGLRenderingContext() {
 		originalMethods[method] = original;
 
 		WebGLRenderingContextWrapper.prototype[method] = function () {
-			var _this28 = this;
+			var _this31 = this;
 
 			var args = new Array(arguments.length);
 			for (var i = 0, l = arguments.length; i < l; i++) {
@@ -635,7 +668,7 @@ function instrumentWebGLRenderingContext() {
 			if (!args[0]) return;
 			args[0] = args[0].uniformLocation;
 			return this.run(method, args, function (_) {
-				return original.apply(_this28.context, args);
+				return original.apply(_this31.context, args);
 			});
 		};
 	});
@@ -759,8 +792,6 @@ var _WebGLRenderingContextWrapper = require("./WebGLRenderingContextWrapper");
 
 require("./widget");
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 function FrameData(id) {
 
 	this.frameId = id;
@@ -863,7 +894,6 @@ window.requestAnimationFrame = function (c) {
 };
 
 function processRequestAnimationFrames(timestamp) {
-	var _detail;
 
 	contexts.forEach(function (ctx) {
 
@@ -916,26 +946,31 @@ function processRequestAnimationFrames(timestamp) {
 
 					var queryTime = ext.getQueryObjectEXT(query, ext.QUERY_RESULT_EXT);
 					var time = queryTime;
-					if (ctx.contextWrapper.count) {
+
+					var wrapper = ctx.contextWrapper;
+
+					if (wrapper.count) {
 						ctx.metrics = {
-							id: ctx.contextWrapper.id,
-							count: ctx.contextWrapper.count,
+							id: wrapper.id,
+							count: wrapper.count,
 							time: (time / 1000000).toFixed(2),
-							jstime: ctx.contextWrapper.JavaScriptTime.toFixed(2),
-							drawArrays: ctx.contextWrapper.drawArraysCalls,
-							drawElements: ctx.contextWrapper.drawElementsCalls,
-							instancedDrawArrays: ctx.contextWrapper.instancedDrawArraysCalls,
-							instancedDrawElements: ctx.contextWrapper.instancedDrawElementsCalls,
-							points: ctx.contextWrapper.pointsCount,
-							lines: ctx.contextWrapper.linesCount,
-							triangles: ctx.contextWrapper.trianglesCount,
-							instancedPoints: ctx.contextWrapper.instancedPointsCount,
-							instancedLines: ctx.contextWrapper.instancedLinesCount,
-							instancedTriangles: ctx.contextWrapper.instancedTrianglesCount,
-							programs: ctx.contextWrapper.programCount,
-							usePrograms: ctx.contextWrapper.useProgramCount,
-							textures: ctx.contextWrapper.textureCount,
-							bindTextures: ctx.contextWrapper.bindTextureCount
+							jstime: wrapper.JavaScriptTime.toFixed(2),
+							drawArrays: wrapper.drawArraysCalls,
+							drawElements: wrapper.drawElementsCalls,
+							instancedDrawArrays: wrapper.instancedDrawArraysCalls,
+							instancedDrawElements: wrapper.instancedDrawElementsCalls,
+							points: wrapper.pointsCount,
+							lines: wrapper.linesCount,
+							triangles: wrapper.trianglesCount,
+							instancedPoints: wrapper.instancedPointsCount,
+							instancedLines: wrapper.instancedLinesCount,
+							instancedTriangles: wrapper.instancedTrianglesCount,
+							programs: wrapper.programCount,
+							usePrograms: wrapper.useProgramCount,
+							textures: wrapper.textureCount,
+							bindTextures: wrapper.bindTextureCount,
+							framebuffers: wrapper.framebufferCount,
+							bindFramebuffers: wrapper.bindFramebufferCount
 						};
 					}
 					ctx.extQueries.splice(i, 1);
@@ -965,10 +1000,12 @@ function processRequestAnimationFrames(timestamp) {
 	});
 
 	var e = new CustomEvent('perfmeter-framedata', {
-		detail: (_detail = {
-			frameTime: frameId,
-			framerate: framerate
-		}, _defineProperty(_detail, "frameTime", frameTime), _defineProperty(_detail, "logs", logs), _detail)
+		detail: {
+			frameId: frameId,
+			framerate: framerate,
+			frameTime: frameTime,
+			logs: logs
+		}
 	});
 	window.dispatchEvent(e);
 
@@ -1027,7 +1064,7 @@ function updateUI(e) {
 	var str = 'Framerate: ' + d.framerate.toFixed(2) + ' FPS\n\tFrame JS time: ' + d.frameTime.toFixed(2) + ' ms\n\n\t';
 
 	d.logs.forEach(function (l) {
-		str += '<b>Canvas</b>\nID: ' + l.id + '\nCount: ' + l.count + '\nCanvas time: ' + l.jstime + ' ms\n<b>WebGL</b>\nGPU time: ' + l.time + ' ms\nPrograms: ' + l.programs + '\nusePrograms: ' + l.usePrograms + '\nTextures: ' + l.textures + '\nbindTextures: ' + l.bindTextures + '\ndArrays: ' + l.drawArrays + '\ndElems: ' + l.drawElements + '\nPoints: ' + l.points + '\nLines: ' + l.lines + '\nTriangles: ' + l.triangles + '\nidArrays: ' + l.instancedDrawArrays + '\nidElems: ' + l.instancedDrawElements + '\niPoints: ' + l.instancedPoints + '\niLines: ' + l.instancedLines + '\niTriangles: ' + l.instancedTriangles + '\n\n';
+		str += '<b>Canvas</b>\nID: ' + l.id + '\nCount: ' + l.count + '\nCanvas time: ' + l.jstime + ' ms\n<b>WebGL</b>\nGPU time: ' + l.time + ' ms\nPrograms: ' + l.programs + '\nusePrograms: ' + l.usePrograms + '\nTextures: ' + l.textures + '\nbindTextures: ' + l.bindTextures + '\nFramebuffers: ' + l.framebuffers + '\nbindFramebuffers: ' + l.bindFramebuffers + '\ndArrays: ' + l.drawArrays + '\ndElems: ' + l.drawElements + '\nPoints: ' + l.points + '\nLines: ' + l.lines + '\nTriangles: ' + l.triangles + '\nidArrays: ' + l.instancedDrawArrays + '\nidElems: ' + l.instancedDrawElements + '\niPoints: ' + l.instancedPoints + '\niLines: ' + l.instancedLines + '\niTriangles: ' + l.instancedTriangles + '\n\n';
 	});
 
 	text.innerHTML = str;
