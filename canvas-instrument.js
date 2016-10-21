@@ -918,7 +918,9 @@
 							    drawElements: ctx.contextWrapper.drawElementsCalls,
 							    points: ctx.contextWrapper.pointsCount,
 							    lines: ctx.contextWrapper.linesCount,
-							    triangles: ctx.contextWrapper.trianglesCount
+							    triangles: ctx.contextWrapper.trianglesCount,
+							    programs: ctx.contextWrapper.programCount,
+							    usePrograms: ctx.contextWrapper.useProgramCount
 							} );
 						}
 						ctx.extQueries.splice( i, 1 );
@@ -949,9 +951,26 @@
 
 		});
 
-		var str = `Framerate: ${framerate.toFixed(2)}<br/>Frame JS time: ${frameTime.toFixed(2)}<br/><br/>`;
+		var str = `Framerate: ${framerate.toFixed(2)} FPS
+		Frame JS time: ${frameTime.toFixed(2)} ms
+
+		`;
 		logs.forEach( l => {
-			str += `ID: ${l.id}<br/>Count: ${l.count}<br/>GPU time: ${l.time}<br/>Canvas time: ${l.jstime}<br/>dArrays: ${l.drawArrays}<br/>dElems: ${l.drawElements}<br/>Points: ${l.points}<br/>Lines: ${l.lines}<br/>Triangles: ${l.triangles}<br/><br/>`;
+			str += `<b>Canvas</b>
+ID: ${l.id}
+Count: ${l.count}
+Canvas time: ${l.jstime} ms
+<b>WebGL</b>
+GPU time: ${l.time} ms
+Programs: ${l.programs}
+usePrograms: ${l.usePrograms}
+dArrays: ${l.drawArrays}
+dElems: ${l.drawElements}
+Points: ${l.points}
+Lines: ${l.lines}
+Triangles: ${l.triangles}
+
+`;
 		});
 		if( text ) text.innerHTML = str;
 
