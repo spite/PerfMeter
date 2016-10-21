@@ -851,7 +851,7 @@
 
 	}
 
-	function processRequestAnimationFrames(){
+	function processRequestAnimationFrames( timestamp ){
 
 		contexts.forEach( ctx => {
 
@@ -874,7 +874,7 @@
 		var queue = rAFQueue.slice( 0 );
 		rAFQueue.length = 0;
 		queue.forEach( rAF => {
-			rAF( performance.now() );
+			rAF( timestamp );
 		});
 
 		var endTime = performance.now();
