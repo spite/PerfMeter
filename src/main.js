@@ -5,6 +5,39 @@ import { WebGLRenderingContextWrapper } from "./WebGLRenderingContextWrapper"
 
 import "./widget";
 
+var glInfo = {
+	versions: [],
+	WebGLAvailable: 'WebGLRenderingContext' in window,
+	WebGL2Available: 'WebGL2RenderingContext' in window
+};
+
+var getGLInfo = function( context ) {
+	var gl = document.createElement( 'canvas' ).getContext( context );
+	if( !gl ) return;
+	var debugInfo = gl.getExtension( 'WEBGL_debug_renderer_info' );
+	var version = {
+		type: context,
+		vendor: gl.getParameter( debugInfo.UNMASKED_VENDOR_WEBGL ),
+		renderer: gl.getParameter( debugInfo.UNMASKED_RENDERER_WEBGL ),
+		glVersion: gl.getParameter( gl.VERSION ),
+		glslVersion: gl.getParameter( gl.SHADING_LANGUAGE_VERSION )
+	};
+	glInfo.versions.push( version );
+};
+
+getGLInfo( 'webgl' );
+getGLInfo( 'webgl2' );
+
+var webGLInfo = '';
+glInfo.versions.forEach( v => {
+	var glInfo = `GL Version: ${v.glVersion}
+GLSL Version: ${v.glslVersion}
+Vendor: ${v.vendor}
+Renderer: ${v.renderer}
+`;
+	webGLInfo += glInfo;
+} );
+
 function FrameData( id ){
 
 	this.frameId = id;
