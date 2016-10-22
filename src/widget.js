@@ -38,12 +38,9 @@ Count: ${l.count}
 Canvas time: ${l.jstime} ms
 <b>WebGL</b>
 GPU time: ${l.time} ms
-Programs: ${l.programs}
-usePrograms: ${l.usePrograms}
-Textures: ${l.textures}
-bindTextures: ${l.bindTextures}
-Framebuffers: ${l.framebuffers}
-bindFramebuffers: ${l.bindFramebuffers}
+Programs: ${l.usePrograms} / ${l.programs}
+Textures: ${l.bindTextures} / ${l.textures}
+Framebuffers: ${l.bindFramebuffers} / ${l.framebuffers}
 dArrays: ${l.drawArrays}
 dElems: ${l.drawElements}
 Points: ${l.points}
