@@ -55,6 +55,24 @@ iTriangles: ${l.instancedTriangles}
 `;
 	});
 
+	var browser = `<b>Browser</b>
+Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}
+
+`;
+	str += browser;
+
+	str += glInfo;
+
 	text.innerHTML = str;
 
 }
+
+var glInfo = '';
+
+function setInfo( info ) {
+
+	glInfo = info;
+
+}
+
+export { setInfo }

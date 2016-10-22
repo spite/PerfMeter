@@ -3,7 +3,7 @@ import{ createUUID } from "./utils";
 import { CanvasRenderingContext2DWrapper } from "./CanvasRenderingContext2DWrapper"
 import { WebGLRenderingContextWrapper } from "./WebGLRenderingContextWrapper"
 
-import "./widget";
+import { setInfo } from "./widget";
 
 var glInfo = {
 	versions: [],
@@ -37,6 +37,8 @@ Renderer: ${v.renderer}
 `;
 	webGLInfo += glInfo;
 } );
+
+setInfo( webGLInfo );
 
 function FrameData( id ){
 
