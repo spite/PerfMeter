@@ -271,6 +271,7 @@ function processRequestAnimationFrames( timestamp ){
 
 	var e = new CustomEvent( 'perfmeter-framedata', {
 		detail: {
+			rAFS: queue.length,
 			frameId,
 			framerate,
 			frameTime,
