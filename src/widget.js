@@ -61,7 +61,7 @@ Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performanc
 `;
 	str += browser;
 
-	str += glInfo;
+	if( settings.showGPUInfo ) str += glInfo;
 
 	text.innerHTML = str;
 
