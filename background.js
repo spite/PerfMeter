@@ -22,6 +22,9 @@ chrome.system.memory.getInfo( res => log( res ) );
 
 function buildScript( s ) {
 
+	settings.cssPath = chrome.extension.getURL( 'css/styles.css' );
+	settings.fontPath = chrome.extension.getURL( 'css/Roboto_Mono/RobotoMono-Regular.ttf' );
+
 	script = `
 "use strict";
 
@@ -46,7 +49,7 @@ if( !window[ '${extensionId}_instrumented' ] ) {
 }
 
 Promise.all( [
-	loadSettings().then( res => { settings = res; notifySettings(); } ),
+	loadSettings().then( res => { settings = res; } ),
 	fetch( chrome.extension.getURL( './src/lib.js' ) ).then( res => res.text() ).then( res => intrumentScript = res ),
 	fetch( chrome.extension.getURL( 'script-common.js' ) ).then( res => res.text() ).then( res => commonScript = res ),
 ] ).then( () => {
@@ -55,9 +58,6 @@ Promise.all( [
 } );
 
 function notifySettings() {
-
-	settings.cssPath = chrome.extension.getURL( 'css/styles.css' );
-	settings.fontPath = chrome.extension.getURL( 'css/Roboto_Mono/RobotoMono-Regular.ttf' );
 
 	log( 'settings', settings );
 
@@ -148,6 +148,7 @@ chrome.runtime.onConnect.addListener( port => {
 			settings = msg.settings;
 			//log( settings );
 			saveSettings( settings ).then( res => {
+				buildScript();
 				notifySettings();
 			} );
 

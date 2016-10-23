@@ -94,14 +94,17 @@ port.onMessage.addListener( msg =>  {
 		settings = msg.settings;
 		if( panelWindow && panelWindow.setSettings ) {
 			panelWindow.setSettings( settings );
-			chrome.devtools.inspectedWindow.eval(
-				`(function() {
+			var code = `(function() {
 					var e = new CustomEvent( 'perfmeter-settings', {
-						detail: ${JSON.stringify( settings )}
+						detail: ${JSON.stringify(settings)}
 					} );
 					window.dispatchEvent( e );
-				})();`,
-				( result, isException ) => log( result, isException )
+				})();`
+			chrome.devtools.inspectedWindow.eval(
+				code,
+				( result, isException ) => {
+					if( isException ) log( result, isException )
+				}
 			);
 		}
 		break;
@@ -111,8 +114,8 @@ port.onMessage.addListener( msg =>  {
 		case 'inject':
 		scriptStatus = 2;
 		chrome.devtools.inspectedWindow.eval(
-			script,//`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
-			( result, isException ) => log( result, isException )
+			`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
+			( result, isException ) => { if( isException ) log( result, isException ) }
 		);
 		break;
 		case 'fromScript':
@@ -154,7 +157,7 @@ function initialize( panel ) {
 			panelWindow.inject = function() {
 				scriptStatus = 2;
 				chrome.devtools.inspectedWindow.eval(
-					script,//`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
+					`(function(){var settings=${JSON.stringify( settings )}; ${script};})();`,
 					( result, isException ) => log( result, isException )
 				);
 			};
