@@ -156,6 +156,7 @@ function processRequestAnimationFrames( timestamp ){
 
 	contexts.forEach( ctx => {
 
+		ctx.contextWrapper.setFrameId( frameId );
 		ctx.contextWrapper.resetFrame();
 
 		var ext = ctx.queryExt;
@@ -240,23 +241,27 @@ function processRequestAnimationFrames( timestamp ){
 
 			});
 
-			/*ctx.contextWrapper.drawQueries.forEach( ( query, i ) => {
+			ctx.metrics.shaderTime = {};
 
-				var available = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_AVAILABLE_EXT );
+			ctx.contextWrapper.drawQueries.forEach( ( query, i ) => {
+
+				var available = ext.getQueryObjectEXT( query.query, ext.QUERY_RESULT_AVAILABLE_EXT );
 				var disjoint = ctx.contextWrapper.context.getParameter( ext.GPU_DISJOINT_EXT );
 
 				if (available && !disjoint){
 
-					var queryTime = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
+					var queryTime = ext.getQueryObjectEXT( query.query, ext.QUERY_RESULT_EXT );
 					var time = queryTime;
-					if (ctx.contextWrapper.count ){
-						log( 'Draw ', time );
+					if( ctx.metrics.shaderTime[ query.program.id ] === undefined ) {
+						ctx.metrics.shaderTime[ query.program.id ] = 0;
 					}
+					ctx.metrics.shaderTime[ query.program.id ] += time;
+					//log( 'Draw ', time );
 					ctx.contextWrapper.drawQueries.splice( i, 1 );
 
 				}
 
-			});*/
+			});
 
 		}
 

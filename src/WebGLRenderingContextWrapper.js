@@ -33,6 +33,9 @@ function WebGLRenderingContextWrapper( context ){
 	this.instancedLinesCount = 0;
 	this.instancedTrianglesCount = 0;
 
+	this.frameId = null;
+	this.currentProgram = null;
+
 }
 
 WebGLRenderingContextWrapper.prototype = Object.create( Wrapper.prototype );
@@ -40,6 +43,12 @@ WebGLRenderingContextWrapper.prototype = Object.create( Wrapper.prototype );
 WebGLRenderingContextWrapper.prototype.cloned = false;
 
 cloneWebGLRenderingContextPrototype();
+
+WebGLRenderingContextWrapper.prototype.setFrameId = function( frameId ) {
+
+	this.frameId = frameId;
+
+}
 
 WebGLRenderingContextWrapper.prototype.resetFrame = function(){
 
@@ -247,14 +256,27 @@ WebGLRenderingContextWrapper.prototype.drawElements = function(){
 
 	return this.run( 'drawElements', arguments, _ => {
 
-		/*var ext = this.queryExt;
-		var query = ext.createQueryEXT();
-		ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
-		this.drawQueries.push( query );*/
+		var program = this.context.getParameter( this.context.CURRENT_PROGRAM );
+		if( program !== this.currentProgram.program ) {
+			debugger;
+		}
+
+		if( settings.profileShaders ) {
+			var ext = this.queryExt;
+			var query = ext.createQueryEXT();
+			ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
+			this.drawQueries.push( {
+				query,
+				program: this.currentProgram,
+				frameId: this.frameId
+			} );
+		}
 
 		var res = WebGLRenderingContext.prototype.drawElements.apply( this.context, arguments );
 
-		//ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
+		if( settings.profileShaders ) {
+			ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
+		}
 
 		return res;
 
@@ -269,14 +291,27 @@ WebGLRenderingContextWrapper.prototype.drawArrays = function(){
 
 	return this.run( 'drawArrays', arguments, _ => {
 
-		/*var ext = this.queryExt;
-		var query = ext.createQueryEXT();
-		ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
-		this.drawQueries.push( query );*/
+		var program = this.context.getParameter( this.context.CURRENT_PROGRAM );
+		if( program !== this.currentProgram.program ) {
+			debugger;
+		}
+
+		if( settings.profileShaders ) {
+			var ext = this.queryExt;
+			var query = ext.createQueryEXT();
+			ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
+			this.drawQueries.push( {
+				query,
+				program: this.currentProgram,
+				frameId: this.frameId
+			} );
+		}
 
 		var res = WebGLRenderingContext.prototype.drawArrays.apply( this.context, arguments );
 
-		//ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
+		if( settings.profileShaders ) {
+			ext.endQueryEXT( ext.TIME_ELAPSED_EXT );
+		}
 
 		return res;
 
@@ -312,7 +347,7 @@ function WebGLUniformLocationWrapper( contextWrapper, program, name ){
 
 	this.program.uniformLocations[ this.name ] = this;
 
-	log( 'Location for uniform', name, 'on program', this.program.id );
+	//log( 'Location for uniform', name, 'on program', this.program.id );
 
 }
 
@@ -520,6 +555,7 @@ function instrumentWebGLRenderingContext(){
 	WebGLRenderingContextWrapper.prototype.useProgram = function(){
 
 		this.useProgramCount++;
+		this.currentProgram = arguments[ 0 ];
 		return this.run( 'useProgram', arguments, _ => {
 			return WebGLRenderingContext.prototype.useProgram.apply( this.context, [ arguments[ 0 ] ? arguments[ 0 ].program : null ] );
 		});
@@ -618,7 +654,7 @@ function WebGLTimerQueryEXTWrapper( contextWrapper, extension ){
 	this.contextWrapper = contextWrapper;
 	this.extension = extension;
 	this.query = this.extension.createQueryEXT();
-	this.time = 0;
+	this.time = -1;
 	this.available = false;
 	this.nested = [];
 
@@ -637,8 +673,9 @@ WebGLTimerQueryEXTWrapper.prototype.getTimes = function(){
 
 WebGLTimerQueryEXTWrapper.prototype.getTime = function(){
 
-	this.time = this.extension.getQueryObjectEXT( this.query, this.extension.QUERY_RESULT_EXT );
+	if( this.time !== -1 ) return this.time;
 
+	this.time = this.extension.getQueryObjectEXT( this.query, this.extension.QUERY_RESULT_EXT );
 	return this.time;
 
 }
@@ -655,6 +692,8 @@ WebGLTimerQueryEXTWrapper.prototype.getResultsAvailable = function(){
 }
 
 WebGLTimerQueryEXTWrapper.prototype.getResultsAvailable = function(){
+
+	if( this.available ) return true;
 
 	this.available = this.extension.getQueryObjectEXT( this.query, this.extension.QUERY_RESULT_AVAILABLE_EXT );
 	return this.available;

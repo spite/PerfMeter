@@ -4,9 +4,17 @@ function CanvasRenderingContext2DWrapper( context ){
 
 	Wrapper.call( this, context );
 
+	this.frameId = null;
+
 }
 
 CanvasRenderingContext2DWrapper.prototype = Object.create( Wrapper.prototype );
+
+CanvasRenderingContext2DWrapper.prototype.setFrameId = function( frameId ) {
+
+	this.frameId = frameId;
+
+}
 
 CanvasRenderingContext2DWrapper.prototype.resetFrame = function(){
 

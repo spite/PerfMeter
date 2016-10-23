@@ -39,12 +39,21 @@ function updateUI( e ) {
 	rAFS: ${d.rAFS}` );
 
 	d.logs.forEach( l => {
+
+		var shaderTime = [];
+		Object.keys( l.shaderTime ).forEach( key => {
+			shaderTime.push( `${key} ${( l.shaderTime[ key ] / 1000000 ).toFixed(2)} ms` );
+		} );
+		var shaderTimeStr = shaderTime.join( "\r\n" );
+
 		blocks.push( `<b>Canvas</b>
 ID: ${l.id}
 Count: ${l.count}
 Canvas time: ${l.jstime} ms
 <b>WebGL</b>
 GPU time: ${l.time} ms
+Shader time:
+${shaderTimeStr}
 Programs: ${l.usePrograms} / ${l.programs}
 Textures: ${l.bindTextures} / ${l.textures}
 Framebuffers: ${l.bindFramebuffers} / ${l.framebuffers}
