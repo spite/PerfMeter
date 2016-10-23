@@ -165,7 +165,10 @@ function processRequestAnimationFrames( timestamp ){
 
 			var query = ext.createQueryEXT();
 			ext.beginQueryEXT( ext.TIME_ELAPSED_EXT, query );
-			ctx.extQueries.push( query );
+			ctx.extQueries.push({
+				query,
+				frameId
+			});
 
 		}
 
@@ -201,12 +204,12 @@ function processRequestAnimationFrames( timestamp ){
 
 			ctx.extQueries.forEach( ( query, i ) => {
 
-				var available = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_AVAILABLE_EXT );
+				var available = ext.getQueryObjectEXT( query.query, ext.QUERY_RESULT_AVAILABLE_EXT );
 				var disjoint = ctx.contextWrapper.context.getParameter( ext.GPU_DISJOINT_EXT );
 
 				if (available && !disjoint){
 
-					var queryTime = ext.getQueryObjectEXT( query, ext.QUERY_RESULT_EXT );
+					var queryTime = ext.getQueryObjectEXT( query.query, ext.QUERY_RESULT_EXT );
 					var time = queryTime;
 
 					var wrapper = ctx.contextWrapper;
