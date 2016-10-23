@@ -45,6 +45,14 @@ ge( 'show-gpuinfo' ).addEventListener( 'change', e => {
 
 } );
 
+ge( 'profile-shaders' ).addEventListener( 'change', e => {
+
+	window.settings.profileShaders = e.target.checked;
+	updateSettings();
+	e.preventDefault();
+
+} );
+
 function setSettings( settings ) {
 
 	window.settings = settings;
@@ -52,6 +60,7 @@ function setSettings( settings ) {
 	ge( 'autoinstrument' ).checked = settings.autoinstrument;
 	ge( 'show-gpuinfo' ).checked = settings.showGPUInfo;
 	ge( 'log-calls' ).checked = settings.log;
+	ge( 'profile-shaders' ).checked = settings.profileShaders;
 
 }
 

@@ -12,7 +12,8 @@ var defaultSettings = {
 
 	showGPUInfo: false,
 	log: false,
-	autoinstrument: true
+	autoinstrument: true,
+	profileShaders: false
 
 };
 
