@@ -5,6 +5,10 @@ import { WebGLRenderingContextWrapper } from "./WebGLRenderingContextWrapper"
 
 import { setInfo } from "./widget";
 
+window.addEventListener( 'perfmeter-settings', e => {
+	settings = e.detail;
+} );
+
 var glInfo = {
 	versions: [],
 	WebGLAvailable: 'WebGLRenderingContext' in window,

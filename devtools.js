@@ -95,7 +95,12 @@ port.onMessage.addListener( msg =>  {
 		if( panelWindow && panelWindow.setSettings ) {
 			panelWindow.setSettings( settings );
 			chrome.devtools.inspectedWindow.eval(
-				`window.__PerfMeterSettings(${JSON.stringify( settings )});`,
+				`(function() {
+					var e = new CustomEvent( 'perfmeter-settings', {
+						detail: ${JSON.stringify( settings )}
+					} );
+					window.dispatchEvent( e );
+				})();`,
 				( result, isException ) => log( result, isException )
 			);
 		}
