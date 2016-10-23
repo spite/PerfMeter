@@ -450,6 +450,15 @@ function instrumentWebGLRenderingContext(){
 		return this.run( 'linkProgram', arguments, _ => {
 			return WebGLRenderingContext.prototype.linkProgram.apply( this.context, [ arguments[ 0 ].program ] );
 		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.validateProgram = function(){
+
+		return this.run( 'validateProgram', arguments, _ => {
+			return WebGLRenderingContext.prototype.validateProgram.apply( this.context, [ arguments[ 0 ].program ] );
+		});
+
 	}
 
 	WebGLRenderingContextWrapper.prototype.getProgramParameter = function(){
