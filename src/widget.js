@@ -26,13 +26,20 @@ function updateUI( e ) {
 
 	const d = e.detail;
 
-	let str = `Framerate: ${d.framerate.toFixed(2)} FPS
-	Frame JS time: ${d.frameTime.toFixed(2)} ms
+	if( d.rAFS === 0 || d.logs.length === 0 ) {
+		text.style.display = 'none';
+	} else {
+		text.style.display = 'block';
+	}
 
-	`;
+	const blocks = [];
+
+	blocks.push( `Framerate: ${d.framerate.toFixed(2)} FPS
+	Frame JS time: ${d.frameTime.toFixed(2)} ms
+	rAFS: ${d.rAFS}` );
 
 	d.logs.forEach( l => {
-		str += `<b>Canvas</b>
+		blocks.push( `<b>Canvas</b>
 ID: ${l.id}
 Count: ${l.count}
 Canvas time: ${l.jstime} ms
@@ -50,20 +57,15 @@ idArrays: ${l.instancedDrawArrays}
 idElems: ${l.instancedDrawElements}
 iPoints: ${l.instancedPoints}
 iLines: ${l.instancedLines}
-iTriangles: ${l.instancedTriangles}
-
-`;
+iTriangles: ${l.instancedTriangles}` );
 	});
 
-	var browser = `<b>Browser</b>
-Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}
+	blocks.push( `<b>Browser</b>
+Mem: ${(performance.memory.usedJSHeapSize/(1024*1024)).toFixed(2)}/${(performance.memory.totalJSHeapSize/(1024*1024)).toFixed(2)}` );
 
-`;
-	str += browser;
+	if( settings.showGPUInfo ) blocks.push( glInfo );
 
-	if( settings.showGPUInfo ) str += glInfo;
-
-	text.innerHTML = str;
+	text.innerHTML = blocks.join( "\r\n\r\n" );
 
 }
 
