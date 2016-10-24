@@ -1,14 +1,14 @@
-import{ Wrapper } from "./wrapper";
+import{ ContextWrapper } from "./ContextWrapper";
 
 function CanvasRenderingContext2DWrapper( context ){
 
-	Wrapper.call( this, context );
+	ContextWrapper.call( this, context );
 
 	this.frameId = null;
 
 }
 
-CanvasRenderingContext2DWrapper.prototype = Object.create( Wrapper.prototype );
+CanvasRenderingContext2DWrapper.prototype = Object.create( ContextWrapper.prototype );
 
 CanvasRenderingContext2DWrapper.prototype.setFrameId = function( frameId ) {
 
@@ -18,7 +18,7 @@ CanvasRenderingContext2DWrapper.prototype.setFrameId = function( frameId ) {
 
 CanvasRenderingContext2DWrapper.prototype.resetFrame = function(){
 
-	Wrapper.prototype.resetFrame.call( this );
+	ContextWrapper.prototype.resetFrame.call( this );
 
 }
 

@@ -1,5 +1,5 @@
 import{ createUUID } from "./utils";
-import{ Wrapper } from "./wrapper";
+import{ ContextWrapper } from "./ContextWrapper";
 
 import{ EXTDisjointTimerQueryExtensionWrapper } from "./extensions/EXTDisjointTimerQueryExtensionWrapper";
 import{ WebGLDebugShadersExtensionWrapper } from "./extensions/WebGLDebugShadersExtensionWrapper";
@@ -7,7 +7,7 @@ import{ ANGLEInstancedArraysExtensionWrapper } from "./extensions/ANGLEInstanced
 
 function WebGLRenderingContextWrapper( context ){
 
-	Wrapper.call( this, context );
+	ContextWrapper.call( this, context );
 
 	this.queryStack = [];
 	this.activeQuery = null;
@@ -42,7 +42,7 @@ function WebGLRenderingContextWrapper( context ){
 
 }
 
-WebGLRenderingContextWrapper.prototype = Object.create( Wrapper.prototype );
+WebGLRenderingContextWrapper.prototype = Object.create( ContextWrapper.prototype );
 
 WebGLRenderingContextWrapper.prototype.cloned = false;
 
@@ -56,7 +56,7 @@ WebGLRenderingContextWrapper.prototype.setFrameId = function( frameId ) {
 
 WebGLRenderingContextWrapper.prototype.resetFrame = function(){
 
-	Wrapper.prototype.resetFrame.call( this );
+	ContextWrapper.prototype.resetFrame.call( this );
 
 	this.useProgramCount = 0;
 	this.bindTextureCount = 0;
