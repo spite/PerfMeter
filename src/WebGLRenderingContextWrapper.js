@@ -1,6 +1,10 @@
 import{ createUUID } from "./utils";
 import{ Wrapper } from "./wrapper";
 
+import{ EXTDisjointTimerQueryExtensionWrapper } from "./extensions/EXTDisjointTimerQueryExtensionWrapper";
+import{ WebGLDebugShadersExtensionWrapper } from "./extensions/WebGLDebugShadersExtensionWrapper";
+import{ ANGLEInstancedArraysExtensionWrapper } from "./extensions/ANGLEInstancedArraysExtensionWrapper";
+
 function WebGLRenderingContextWrapper( context ){
 
 	Wrapper.call( this, context );
@@ -117,53 +121,11 @@ function cloneWebGLRenderingContextPrototype(){
 
 }
 
-function WebGLDebugShadersExtensionWrapper( contextWrapper ){
-
-	this.id = createUUID();
-	this.contextWrapper = contextWrapper;
-	this.extension = WebGLRenderingContext.prototype.getExtension.apply( this.contextWrapper.context, [ 'WEBGL_debug_shaders' ] );
-
-}
-
-WebGLDebugShadersExtensionWrapper.prototype.getTranslatedShaderSource = function( shaderWrapper ){
-
-	return this.extension.getTranslatedShaderSource( shaderWrapper.shader );
-
-}
-
-function ANGLEInstancedArraysExtensionWrapper( contextWrapper ) {
-
-	this.id = createUUID();
-	this.contextWrapper = contextWrapper;
-	this.extension = WebGLRenderingContext.prototype.getExtension.apply( this.contextWrapper.context, [ 'ANGLE_instanced_arrays' ] );
-
-}
-
-ANGLEInstancedArraysExtensionWrapper.prototype.drawArraysInstancedANGLE = function() {
-
-	this.contextWrapper.instancedDrawArraysCalls++;
-	this.contextWrapper.updateInstancedDrawCount( arguments[ 0 ], arguments[ 2 ] * arguments[ 3 ] );
-	return this.contextWrapper.run( 'drawArraysInstancedANGLE', arguments, _ => {
-		return this.extension.drawArraysInstancedANGLE.apply( this.extension, arguments );
-	} );
-
-}
-
-ANGLEInstancedArraysExtensionWrapper.prototype.drawElementsInstancedANGLE = function() {
-
-	this.contextWrapper.instancedDrawElementsCalls++;
-	this.contextWrapper.updateInstancedDrawCount( arguments[ 0 ], arguments[ 1 ] * arguments[ 4 ] );
-	return this.contextWrapper.run( 'drawElementsInstancedANGLE', arguments, _ => {
-		return this.extension.drawElementsInstancedANGLE.apply( this.extension, arguments );
-	} );
-
-}
-
-ANGLEInstancedArraysExtensionWrapper.prototype.vertexAttribDivisorANGLE = function() {
-
-	return this.extension.vertexAttribDivisorANGLE.apply( this.extension, arguments );
-
-}
+const extensionWrappers = {
+	WEBGL_debug_shaders: WebGLDebugShadersExtensionWrapper,
+	EXT_disjoint_timer_query: EXTDisjointTimerQueryExtensionWrapper,
+	ANGLE_instanced_arrays: ANGLEInstancedArraysExtensionWrapper
+};
 
 WebGLRenderingContextWrapper.prototype.getExtension = function(){
 
@@ -171,20 +133,9 @@ WebGLRenderingContextWrapper.prototype.getExtension = function(){
 
 	return this.run( 'getExtension', arguments, _ => {
 
-		switch( extensionName ){
-
-			case 'WEBGL_debug_shaders':
-			return new WebGLDebugShadersExtensionWrapper( this );
-			break;
-
-			case 'EXT_disjoint_timer_query':
-			return new EXTDisjointTimerQueryExtensionWrapper( this );
-			break;
-
-			case 'ANGLE_instanced_arrays':
-			return new ANGLEInstancedArraysExtensionWrapper( this );
-			break;
-
+		var wrapper = extensionWrappers[ extensionName ];
+		if( wrapper ) {
+			return new wrapper( this );
 		}
 
 		return this.context.getExtension( extensionName );
@@ -646,125 +597,6 @@ function instrumentWebGLRenderingContext(){
 		}
 
 	});
-
-}
-
-function WebGLTimerQueryEXTWrapper( contextWrapper, extension ){
-
-	this.contextWrapper = contextWrapper;
-	this.extension = extension;
-	this.query = this.extension.createQueryEXT();
-	this.time = -1;
-	this.available = false;
-	this.nested = [];
-
-}
-
-WebGLTimerQueryEXTWrapper.prototype.getTimes = function(){
-
-	var time = this.getTime();
-	this.nested.forEach( q => {
-		time += q.getTimes();
-	});
-
-	return time;
-
-}
-
-WebGLTimerQueryEXTWrapper.prototype.getTime = function(){
-
-	if( this.time !== -1 ) return this.time;
-
-	this.time = this.extension.getQueryObjectEXT( this.query, this.extension.QUERY_RESULT_EXT );
-	return this.time;
-
-}
-
-WebGLTimerQueryEXTWrapper.prototype.getResultsAvailable = function(){
-
-	var res = true;
-	this.nested.forEach( q => {
-		res = res && q.getResultsAvailable();
-	});
-
-	return res;
-
-}
-
-WebGLTimerQueryEXTWrapper.prototype.getResultsAvailable = function(){
-
-	if( this.available ) return true;
-
-	this.available = this.extension.getQueryObjectEXT( this.query, this.extension.QUERY_RESULT_AVAILABLE_EXT );
-	return this.available;
-
-}
-
-function EXTDisjointTimerQueryExtensionWrapper( contextWrapper ){
-
-	this.contextWrapper = contextWrapper;
-	this.extension = WebGLRenderingContext.prototype.getExtension.apply( this.contextWrapper.context, [ 'EXT_disjoint_timer_query' ] );
-
-	this.QUERY_COUNTER_BITS_EXT = this.extension.QUERY_COUNTER_BITS_EXT;
-	this.CURRENT_QUERY_EXT = this.extension.CURRENT_QUERY_EXT;
-	this.QUERY_RESULT_AVAILABLE_EXT = this.extension.QUERY_RESULT_AVAILABLE_EXT;
-	this.GPU_DISJOINT_EXT = this.extension.GPU_DISJOINT_EXT;
-	this.QUERY_RESULT_EXT = this.extension.QUERY_RESULT_EXT;
-	this.TIME_ELAPSED_EXT = this.extension.TIME_ELAPSED_EXT;
-	this.TIMESTAMP_EXT = this.extension.TIMESTAMP_EXT;
-
-}
-
-EXTDisjointTimerQueryExtensionWrapper.prototype.createQueryEXT = function(){
-
-	return new WebGLTimerQueryEXTWrapper( this.contextWrapper, this.extension );
-
-}
-
-EXTDisjointTimerQueryExtensionWrapper.prototype.beginQueryEXT = function( type, query ){
-
-	if( this.contextWrapper.activeQuery ){
-		this.extension.endQueryEXT( type );
-		this.contextWrapper.activeQuery.nested.push( query );
-		this.contextWrapper.queryStack.push( this.contextWrapper.activeQuery );
-	}
-
-	this.contextWrapper.activeQuery = query;
-
-	return this.extension.beginQueryEXT( type, query.query );
-
-}
-
-EXTDisjointTimerQueryExtensionWrapper.prototype.endQueryEXT = function( type ){
-
-	this.contextWrapper.activeQuery = this.contextWrapper.queryStack.pop();
-	var res = this.extension.endQueryEXT( type );
-	if( this.contextWrapper.activeQuery ){
-		var newQuery = new WebGLTimerQueryEXTWrapper( this.contextWrapper, this.extension );
-		this.contextWrapper.activeQuery.nested.push( newQuery );
-		this.extension.beginQueryEXT( type, newQuery.query );
-	}
-	return res;
-
-}
-
-EXTDisjointTimerQueryExtensionWrapper.prototype.getQueryObjectEXT = function( query, pname ){
-
-	if( pname === this.extension.QUERY_RESULT_AVAILABLE_EXT ){
-		return query.getResultsAvailable();
-	}
-
-	if( pname === this.extension.QUERY_RESULT_EXT ){
-		return query.getTimes();
-	}
-
-	return this.extension.getQueryObjectEXT( query.query, pname );
-
-}
-
-EXTDisjointTimerQueryExtensionWrapper.prototype.getQueryEXT = function( target, pname ){
-
-	return this.extension.getQueryEXT( target, pname );
 
 }
 
