@@ -49,7 +49,7 @@ function updateUI( e ) {
 			var shaderTimeStr = shaderTime.join( "\r\n" );
 
 			blocks.push( `<b>Canvas</b>
-ID: ${l.id}
+ID: ${l.uuid}
 Count: ${l.count}
 Canvas time: ${l.jstime} ms
 <b>WebGL</b>
@@ -66,7 +66,7 @@ Lines: ${l.lines}
 Triangles: ${l.triangles}
 idArrays: ${l.instancedDrawArrays}
 idElems: ${l.instancedDrawElements}
-iPoints: ${l.instancedPoints}
+iPoints: ${l.instancedPoints}.i
 iLines: ${l.instancedLines}
 iTriangles: ${l.instancedTriangles}` );
 		}

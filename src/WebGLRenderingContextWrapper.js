@@ -1,4 +1,5 @@
 import{ createUUID } from "./utils";
+import{ Wrapper } from "./Wrapper";
 import{ ContextWrapper } from "./ContextWrapper";
 
 import{ EXTDisjointTimerQueryExtensionWrapper } from "./extensions/EXTDisjointTimerQueryExtensionWrapper";
@@ -272,7 +273,8 @@ WebGLRenderingContextWrapper.prototype.drawArrays = function(){
 
 function WebGLShaderWrapper( contextWrapper, type ){
 
-	this.id = createUUID();
+	Wrapper.call( this );
+
 	this.contextWrapper = contextWrapper;
 	this.shader = WebGLRenderingContext.prototype.createShader.apply( this.contextWrapper.context, [ type ] );
 	this.version = 1;
@@ -280,6 +282,8 @@ function WebGLShaderWrapper( contextWrapper, type ){
 	this.type = type;
 
 }
+
+WebGLShaderWrapper.prototype = Object.create( Wrapper.prototype );
 
 WebGLShaderWrapper.prototype.shaderSource = function( source ){
 
@@ -290,7 +294,8 @@ WebGLShaderWrapper.prototype.shaderSource = function( source ){
 
 function WebGLUniformLocationWrapper( contextWrapper, program, name ){
 
-	this.id = createUUID();
+	Wrapper.call( this );
+
 	this.contextWrapper = contextWrapper;
 	this.program = program;
 	this.name = name;
@@ -298,9 +303,11 @@ function WebGLUniformLocationWrapper( contextWrapper, program, name ){
 
 	this.program.uniformLocations[ this.name ] = this;
 
-	//log( 'Location for uniform', name, 'on program', this.program.id );
+	//log( 'Location for uniform', name, 'on program', this.program.uuid );
 
 }
+
+WebGLUniformLocationWrapper.prototype = Object.create( Wrapper.prototype );
 
 WebGLUniformLocationWrapper.prototype.getUniformLocation = function(){
 
@@ -310,7 +317,8 @@ WebGLUniformLocationWrapper.prototype.getUniformLocation = function(){
 
 function WebGLProgramWrapper( contextWrapper ){
 
-	this.id = createUUID();
+	Wrapper.call( this );
+
 	this.contextWrapper = contextWrapper;
 	this.program = WebGLRenderingContext.prototype.createProgram.apply( this.contextWrapper.context );
 	this.version = 1;
@@ -320,6 +328,8 @@ function WebGLProgramWrapper( contextWrapper ){
 	this.uniformLocations = {};
 
 }
+
+WebGLProgramWrapper.prototype = Object.create( Wrapper.prototype );
 
 WebGLProgramWrapper.prototype.attachShader = function(){
 

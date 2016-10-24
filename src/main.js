@@ -1,4 +1,4 @@
-import{ createUUID } from "./utils";
+import{ Wrapper } from "./Wrapper";
 
 import { CanvasRenderingContext2DWrapper } from "./CanvasRenderingContext2DWrapper"
 import { WebGLRenderingContextWrapper } from "./WebGLRenderingContextWrapper"
@@ -80,7 +80,8 @@ function ContextFrameData( type ){
 
 function ContextData( contextWrapper ){
 
-	this.id = createUUID();
+	Wrapper.call( this );
+
 	this.queryExt = null;
 	this.contextWrapper = contextWrapper;
 	this.extQueries = [];
@@ -88,6 +89,8 @@ function ContextData( contextWrapper ){
 	this.metrics = {}
 
 }
+
+ContextData.prototype = Object.create( Wrapper.prototype );
 
 var contexts = [];
 var canvasContexts = new WeakMap();
@@ -215,7 +218,7 @@ function processRequestAnimationFrames( timestamp ){
 					var wrapper = ctx.contextWrapper;
 
 					ctx.metrics = {
-						id: wrapper.id,
+						id: wrapper.uuid,
 						count: wrapper.count,
 						time: ( time / 1000000 ).toFixed( 2 ),
 						jstime: wrapper.JavaScriptTime.toFixed(2),
@@ -254,10 +257,10 @@ function processRequestAnimationFrames( timestamp ){
 
 					var queryTime = ext.getQueryObjectEXT( query.query, ext.QUERY_RESULT_EXT );
 					var time = queryTime;
-					if( ctx.metrics.shaderTime[ query.program.id ] === undefined ) {
-						ctx.metrics.shaderTime[ query.program.id ] = 0;
+					if( ctx.metrics.shaderTime[ query.program.uuid ] === undefined ) {
+						ctx.metrics.shaderTime[ query.program.uuid ] = 0;
 					}
-					ctx.metrics.shaderTime[ query.program.id ] += time;
+					ctx.metrics.shaderTime[ query.program.uuid ] += time;
 					ctx.contextWrapper.drawQueries.splice( i, 1 );
 
 				}

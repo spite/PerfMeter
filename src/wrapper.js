@@ -4,7 +4,7 @@ class Wrapper {
 
     constructor() {
 
-        this.id = createUUID();
+        this.uuid = createUUID();
 
     }
 
