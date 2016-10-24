@@ -1,8 +1,9 @@
-import{ createUUID } from "../utils";
+import{ Wrapper } from "../Wrapper";
 
 function WebGLTimerQueryEXTWrapper( contextWrapper, extension ){
 
-	this.id = createUUID();
+	Wrapper.call( this );
+
 	this.contextWrapper = contextWrapper;
 	this.extension = extension;
 	this.query = this.extension.createQueryEXT();
@@ -12,6 +13,8 @@ function WebGLTimerQueryEXTWrapper( contextWrapper, extension ){
 	this.nested = [];
 
 }
+
+WebGLTimerQueryEXTWrapper.prototype = Object.create( Wrapper.prototype );
 
 WebGLTimerQueryEXTWrapper.prototype.getTimes = function(){
 
@@ -57,7 +60,8 @@ WebGLTimerQueryEXTWrapper.prototype.getResultsAvailable = function(){
 
 function EXTDisjointTimerQueryExtensionWrapper( contextWrapper ){
 
-	this.id = createUUID();
+	Wrapper.call( this );
+
 	this.contextWrapper = contextWrapper;
 	this.extension = WebGLRenderingContext.prototype.getExtension.apply( this.contextWrapper.context, [ 'EXT_disjoint_timer_query' ] );
 
@@ -70,6 +74,8 @@ function EXTDisjointTimerQueryExtensionWrapper( contextWrapper ){
 	this.TIMESTAMP_EXT = this.extension.TIMESTAMP_EXT;
 
 }
+
+EXTDisjointTimerQueryExtensionWrapper.prototype = Object.create( Wrapper.prototype );
 
 EXTDisjointTimerQueryExtensionWrapper.prototype.createQueryEXT = function(){
 

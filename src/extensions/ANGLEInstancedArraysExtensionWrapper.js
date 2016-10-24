@@ -1,12 +1,15 @@
-import{ createUUID } from "../utils";
+import{ Wrapper } from "../Wrapper";
 
 function ANGLEInstancedArraysExtensionWrapper( contextWrapper ) {
 
-	this.id = createUUID();
+	Wrapper.call( this );
+
 	this.contextWrapper = contextWrapper;
 	this.extension = WebGLRenderingContext.prototype.getExtension.apply( this.contextWrapper.context, [ 'ANGLE_instanced_arrays' ] );
 
 }
+
+ANGLEInstancedArraysExtensionWrapper.prototype = Object.create( Wrapper.prototype );
 
 ANGLEInstancedArraysExtensionWrapper.prototype.drawArraysInstancedANGLE = function() {
 

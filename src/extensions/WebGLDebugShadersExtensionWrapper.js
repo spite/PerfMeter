@@ -1,12 +1,15 @@
-import{ createUUID } from "../utils";
+import{ Wrapper } from "../Wrapper";
 
 function WebGLDebugShadersExtensionWrapper( contextWrapper ){
 
-	this.id = createUUID();
+	Wrapper.call( this );
+
 	this.contextWrapper = contextWrapper;
 	this.extension = WebGLRenderingContext.prototype.getExtension.apply( this.contextWrapper.context, [ 'WEBGL_debug_shaders' ] );
 
 }
+
+WebGLDebugShadersExtensionWrapper.prototype = Object.create( Wrapper.prototype );
 
 WebGLDebugShadersExtensionWrapper.prototype.getTranslatedShaderSource = function( shaderWrapper ){
 
