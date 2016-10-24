@@ -11,3 +11,7 @@ How to install:
 5. Open DevTools
 6. Go to PerfMeter tab
 7. Hit `Reload` to instrument the tab
+
+### About the library
+
+Even though this is intended as a Chrome Extension -and in the future, via de Web Extensions, a Firefox one-, the instrumentation library itself (`src/lib.js`) is designed so it can be used in other browsers. 
