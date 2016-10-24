@@ -214,30 +214,29 @@ function processRequestAnimationFrames( timestamp ){
 
 					var wrapper = ctx.contextWrapper;
 
-					if (wrapper.count ){
-						ctx.metrics = {
-							id: wrapper.id,
-							count: wrapper.count,
-							time: ( time / 1000000 ).toFixed( 2 ),
-							jstime: wrapper.JavaScriptTime.toFixed(2),
-							drawArrays: wrapper.drawArraysCalls,
-							drawElements: wrapper.drawElementsCalls,
-							instancedDrawArrays: wrapper.instancedDrawArraysCalls,
-							instancedDrawElements: wrapper.instancedDrawElementsCalls,
-							points: wrapper.pointsCount,
-							lines: wrapper.linesCount,
-							triangles: wrapper.trianglesCount,
-							instancedPoints: wrapper.instancedPointsCount,
-							instancedLines: wrapper.instancedLinesCount,
-							instancedTriangles: wrapper.instancedTrianglesCount,
-							programs: wrapper.programCount,
-							usePrograms: wrapper.useProgramCount,
-							textures: wrapper.textureCount,
-							bindTextures: wrapper.bindTextureCount,
-							framebuffers: wrapper.framebufferCount,
-							bindFramebuffers: wrapper.bindFramebufferCount
-						};
-					}
+					ctx.metrics = {
+						id: wrapper.id,
+						count: wrapper.count,
+						time: ( time / 1000000 ).toFixed( 2 ),
+						jstime: wrapper.JavaScriptTime.toFixed(2),
+						drawArrays: wrapper.drawArraysCalls,
+						drawElements: wrapper.drawElementsCalls,
+						instancedDrawArrays: wrapper.instancedDrawArraysCalls,
+						instancedDrawElements: wrapper.instancedDrawElementsCalls,
+						points: wrapper.pointsCount,
+						lines: wrapper.linesCount,
+						triangles: wrapper.trianglesCount,
+						instancedPoints: wrapper.instancedPointsCount,
+						instancedLines: wrapper.instancedLinesCount,
+						instancedTriangles: wrapper.instancedTrianglesCount,
+						programs: wrapper.programCount,
+						usePrograms: wrapper.useProgramCount,
+						textures: wrapper.textureCount,
+						bindTextures: wrapper.bindTextureCount,
+						framebuffers: wrapper.framebufferCount,
+						bindFramebuffers: wrapper.bindFramebufferCount
+					};
+
 					ctx.extQueries.splice( i, 1 );
 
 				}
@@ -259,7 +258,6 @@ function processRequestAnimationFrames( timestamp ){
 						ctx.metrics.shaderTime[ query.program.id ] = 0;
 					}
 					ctx.metrics.shaderTime[ query.program.id ] += time;
-					//log( 'Draw ', time );
 					ctx.contextWrapper.drawQueries.splice( i, 1 );
 
 				}
@@ -272,9 +270,7 @@ function processRequestAnimationFrames( timestamp ){
 
 	var logs = [];
 	contexts.forEach( ctx => {
-		if( ctx.metrics.count ) {
-			logs.push( ctx.metrics )
-		}
+		logs.push( ctx.metrics )
 	} );
 
 	var e = new CustomEvent( 'perfmeter-framedata', {
