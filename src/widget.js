@@ -66,7 +66,7 @@ Lines: ${l.lines}
 Triangles: ${l.triangles}
 idArrays: ${l.instancedDrawArrays}
 idElems: ${l.instancedDrawElements}
-iPoints: ${l.instancedPoints}.i
+iPoints: ${l.instancedPoints}
 iLines: ${l.instancedLines}
 iTriangles: ${l.instancedTriangles}` );
 		}
