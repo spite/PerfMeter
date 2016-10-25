@@ -690,7 +690,9 @@ function instrumentWebGLRenderingContext(){
 
 	WebGLRenderingContextWrapper.prototype.deleteTexture = function(){
 
+		this.textures.delete( arguments[ 0 ] );
 		this.textureCount--;
+
 		return this.run( 'deleteTexture', arguments, _ => {
 			return WebGLRenderingContext.prototype.deleteTexture.apply( this.context, [ arguments[ 0 ].texture ] );
 		});
