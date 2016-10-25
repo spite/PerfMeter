@@ -69,6 +69,9 @@ ID: ${l.uuid}
 Count: ${l.count}
 Canvas time: ${l.jstime} ms
 <b>WebGL</b>
+TexMem: ${formatNumber(l.textureMemory,memorySizes,2)}
+BufMem: ${formatNumber(l.bufferMemory,memorySizes,2)}
+Total: ${formatNumber(l.textureMemory+l.bufferMemory,memorySizes,2)}
 GPU time: ${l.time} ms
 Shader time:
 ${shaderTimeStr}
