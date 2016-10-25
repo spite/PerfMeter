@@ -44,6 +44,10 @@ function WebGLRenderingContextWrapper( context ){
 
 	this.textures = new Map();
 
+	this.boundBuffer = null;
+
+	this.buffers = new Map();
+
 }
 
 WebGLRenderingContextWrapper.prototype = Object.create( ContextWrapper.prototype );
@@ -132,6 +136,20 @@ WebGLRenderingContextWrapper.prototype.getTextureMemory = function() {
 	this.textures.forEach( t => {
 
 		memory += t.size;
+
+	});
+
+	return memory;
+
+}
+
+WebGLRenderingContextWrapper.prototype.getBufferMemory = function() {
+
+	var memory = 0;
+
+	this.buffers.forEach( b => {
+
+		memory += b.size;
 
 	});
 
@@ -471,11 +489,26 @@ WebGLTextureWrapper.prototype.computeTextureMemoryUsage = function() {
 
 }
 
+function WebGLBufferWrapper( contextWrapper ) {
+
+	Wrapper.call( this );
+
+	this.contextWrapper = contextWrapper;
+	this.buffer = this.contextWrapper.context.createBuffer();
+
+	this.contextWrapper.buffers.set( this, this );
+
+	this.size = 0;
+
+}
+
+WebGLBufferWrapper.prototype = Object.create( Wrapper.prototype );
+
 function instrumentWebGLRenderingContext(){
 
 	WebGLRenderingContextWrapper.prototype.createShader = function(){
 
-		log( 'create shader' );
+		//log( 'create shader' );
 		return this.run( 'createShader', arguments, _ => {
 			return new WebGLShaderWrapper( this, arguments[ 0 ] );
 		});
@@ -768,6 +801,41 @@ function instrumentWebGLRenderingContext(){
 		}
 
 	});
+
+	WebGLRenderingContextWrapper.prototype.createBuffer = function() {
+
+		return this.run( 'createBuffer', arguments, _ => {
+			return new WebGLBufferWrapper( this );
+		});
+
+	}
+
+
+	WebGLRenderingContextWrapper.prototype.bufferData = function() {
+
+		this.boundBuffer.size = arguments[ 1 ].length;
+
+		return this.run( 'bufferData', arguments, _ => {
+			return WebGLRenderingContext.prototype.bufferData.apply( this.context, arguments );
+		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.bindBuffer = function() {
+
+		this.boundBuffer = arguments[ 1 ];
+
+		return this.run( 'bindBuffer', arguments, _ => {
+			return WebGLRenderingContext.prototype.bindBuffer.apply(
+				this.context,
+				[
+					arguments[ 0 ],
+					arguments[ 1 ] ? arguments[ 1 ].buffer : null
+				]
+			);
+		});
+
+	}
 
 }
 
