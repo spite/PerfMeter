@@ -219,6 +219,8 @@ function processRequestAnimationFrames( timestamp ){
 
 					ctx.metrics = {
 						id: wrapper.uuid,
+						textureMemory: wrapper.getTextureMemory(),
+						bufferMemory: wrapper.getBufferMemory(),
 						count: wrapper.count,
 						time: ( time / 1000000 ).toFixed( 2 ),
 						jstime: wrapper.JavaScriptTime.toFixed(2),
