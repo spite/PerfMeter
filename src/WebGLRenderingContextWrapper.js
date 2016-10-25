@@ -39,6 +39,10 @@ function WebGLRenderingContextWrapper( context ){
 
 	this.frameId = null;
 	this.currentProgram = null;
+	this.boundTexture2D = null;
+	this.boundTextureCube = null;
+
+	this.textures = new Map();
 
 }
 
@@ -118,6 +122,20 @@ function cloneWebGLRenderingContextPrototype(){
 	});
 
 	instrumentWebGLRenderingContext();
+
+}
+
+WebGLRenderingContextWrapper.prototype.getTextureMemory = function() {
+
+	var memory = 0;
+
+	this.textures.forEach( t => {
+
+		memory += t.size;
+
+	});
+
+	return memory;
 
 }
 
@@ -270,6 +288,21 @@ WebGLRenderingContextWrapper.prototype.drawArrays = function(){
 
 }
 
+const formats = {}
+formats[ WebGLRenderingContext.prototype.ALPHA ] = 1;
+formats[ WebGLRenderingContext.prototype.RGB ] = 3;
+formats[ WebGLRenderingContext.prototype.RGBA ] = 4;
+formats[ WebGLRenderingContext.prototype.RGBA ] = 4;
+formats[ WebGLRenderingContext.prototype.LUMINANCE ] = 1;
+formats[ WebGLRenderingContext.prototype.LUMINANCE_ALPHA ] = 1;
+formats[ WebGLRenderingContext.prototype.DEPTH_COMPONENT ] = 1;
+
+const types = {}
+types[ WebGLRenderingContext.prototype.UNSIGNED_BYTE ] = 1;
+types[ WebGLRenderingContext.prototype.FLOAT ] = 4;
+types[ 36193 ] = 2; // OESTextureHalfFloat.HALF_FLOAT_OES
+types[ WebGLRenderingContext.prototype.UNSIGNED_INT ] = 4;
+
 function WebGLShaderWrapper( contextWrapper, type ){
 
 	Wrapper.call( this );
@@ -360,6 +393,81 @@ WebGLProgramWrapper.prototype.highlight = function(){
 	Object.keys( this.uniformLocations ).forEach( name => {
 		this.uniformLocations[ name ].getUniformLocation();
 	});
+
+}
+
+function WebGLTextureWrapper( contextWrapper ) {
+
+	Wrapper.call( this );
+
+	log( 'createTexture', this.uuid );
+
+	this.contextWrapper = contextWrapper;
+	this.texture = this.contextWrapper.context.createTexture();
+
+	this.contextWrapper.textures.set( this, this );
+
+	this.size = 0;
+
+}
+
+WebGLTextureWrapper.prototype = Object.create( Wrapper.prototype );
+
+WebGLTextureWrapper.prototype.computeTextureMemoryUsage = function() {
+
+	log( 'texImaged2D', arguments );
+
+	if( arguments.length === 6 ) {
+
+		// texImage2D(target, level, internalformat, format, type, ImageData? pixels);
+		// texImage2D(target, level, internalformat, format, type, HTMLImageElement? pixels);
+		// texImage2D(target, level, internalformat, format, type, HTMLCanvasElement? pixels);
+		// texImage2D(target, level, internalformat, format, type, HTMLVideoElement? pixels);
+
+		var size = formats[ arguments[ 2 ] ] * types[ arguments[ 4 ] ];
+		if( isNaN( size ) ) debugger;
+		var width = 0;
+		var height = 0;
+
+		if( arguments[ 5 ] instanceof HTMLImageElement ) {
+			width = arguments[ 5 ].naturalWidth;
+			height = arguments[ 5 ].naturalHeight;
+		}
+
+		if( arguments[ 5 ] instanceof HTMLCanvasElement || arguments[ 5 ] instanceof ImageData ) {
+			width = arguments[ 5 ].width;
+			height = arguments[ 5 ].height;
+		}
+
+		if( arguments[ 5 ] instanceof HTMLVideoElement ) {
+			width = arguments[ 5 ].videoWidth;
+			height = arguments[ 5 ].videoHeight;
+		}
+
+		var memory = width * height * size;
+		this.size = memory;
+
+		log( 'computeTextureMemoryUsage', width, height, size, memory, 'bytes' );
+
+	} else if( arguments.length === 9 ) {
+
+		// texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView? pixels);
+
+		var size = formats[ arguments[ 2 ] ] * types[ arguments[ 7 ] ];
+		if( isNaN( size ) ) debugger;
+		var width = arguments[ 3 ]
+		var height = arguments[ 4 ];
+
+		var memory = width * height * size;
+		this.size = memory;
+
+		log( 'computeTextureMemoryUsage', width, height, size, memory, 'bytes' );
+
+	} else {
+
+		log( 'ARGUMENTS LENGTH NOT RECOGNISED' );
+
+	}
 
 }
 
@@ -526,7 +634,7 @@ function instrumentWebGLRenderingContext(){
 
 		this.textureCount++;
 		return this.run( 'createTexture', arguments, _ => {
-			return WebGLRenderingContext.prototype.createTexture.apply( this.context, arguments );
+			return new WebGLTextureWrapper( this );
 		});
 
 	}
@@ -535,16 +643,70 @@ function instrumentWebGLRenderingContext(){
 
 		this.textureCount--;
 		return this.run( 'deleteTexture', arguments, _ => {
-			return WebGLRenderingContext.prototype.deleteTexture.apply( this.context, arguments );
+			return WebGLRenderingContext.prototype.deleteTexture.apply( this.context, [ arguments[ 0 ].texture ] );
+		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.isTexture = function(){
+
+		return this.run( 'isTexture', arguments, _ => {
+			return WebGLRenderingContext.prototype.isTexture.apply( this.context, [ arguments[ 0 ].texture ] );
 		});
 
 	}
 
 	WebGLRenderingContextWrapper.prototype.bindTexture = function(){
 
+		log( 'bindTexture', arguments[ 1 ] );
+
 		this.bindTextureCount++;
+		if( arguments[ 0 ] === WebGLRenderingContext.prototype.TEXTURE_2D ) {
+			this.boundTexture2D = arguments[ 1 ];
+		}
+		if( arguments[ 0 ] === WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP ) {
+			this.boundTextureCube = arguments[ 1 ];
+		}
+
 		return this.run( 'bindTexture', arguments, _ => {
-			return WebGLRenderingContext.prototype.bindTexture.apply( this.context, arguments );
+			return WebGLRenderingContext.prototype.bindTexture.apply(
+				this.context,
+				[
+					arguments[ 0 ],
+					arguments[ 1 ] ? arguments[ 1 ].texture : null
+				]
+			);
+		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.texImage2D = function(){
+
+		if( arguments[ 0 ] === WebGLRenderingContext.prototype.TEXTURE_2D ) {
+			this.boundTexture2D.computeTextureMemoryUsage.apply( this.boundTexture2D, arguments );
+		}
+
+		return this.run( 'texImage2D', arguments, _ => {
+			return WebGLRenderingContext.prototype.texImage2D.apply(
+				this.context,
+				arguments
+			);
+		});
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.framebufferTexture2D = function(){
+
+		return this.run( 'framebufferTexture2D', arguments, _ => {
+			return WebGLRenderingContext.prototype.framebufferTexture2D.apply(
+				this.context,
+				[
+					arguments[ 0 ],
+					arguments[ 1 ],
+					arguments[ 2 ],
+					arguments[ 3 ].texture,
+					arguments[ 4 ]
+				] );
 		});
 
 	}
