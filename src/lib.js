@@ -150,7 +150,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.WebGLRenderingContextWrapper = undefined;
 
-var _utils = require("./utils");
+var _Wrapper = require("./Wrapper");
 
 var _ContextWrapper = require("./ContextWrapper");
 
@@ -194,6 +194,14 @@ function WebGLRenderingContextWrapper(context) {
 
 	this.frameId = null;
 	this.currentProgram = null;
+	this.boundTexture2D = null;
+	this.boundTextureCube = null;
+
+	this.textures = new Map();
+
+	this.boundBuffer = null;
+
+	this.buffers = new Map();
 }
 
 WebGLRenderingContextWrapper.prototype = Object.create(_ContextWrapper.ContextWrapper.prototype);
@@ -275,6 +283,30 @@ function cloneWebGLRenderingContextPrototype() {
 
 	instrumentWebGLRenderingContext();
 }
+
+WebGLRenderingContextWrapper.prototype.getTextureMemory = function () {
+
+	var memory = 0;
+
+	this.textures.forEach(function (t) {
+
+		memory += t.size;
+	});
+
+	return memory;
+};
+
+WebGLRenderingContextWrapper.prototype.getBufferMemory = function () {
+
+	var memory = 0;
+
+	this.buffers.forEach(function (b) {
+
+		memory += b.size;
+	});
+
+	return memory;
+};
 
 var extensionWrappers = {
 	WEBGL_debug_shaders: _WebGLDebugShadersExtensionWrapper.WebGLDebugShadersExtensionWrapper,
@@ -422,15 +454,33 @@ WebGLRenderingContextWrapper.prototype.drawArrays = function () {
 	});
 };
 
+var formats = {};
+formats[WebGLRenderingContext.prototype.ALPHA] = 1;
+formats[WebGLRenderingContext.prototype.RGB] = 3;
+formats[WebGLRenderingContext.prototype.RGBA] = 4;
+formats[WebGLRenderingContext.prototype.RGBA] = 4;
+formats[WebGLRenderingContext.prototype.LUMINANCE] = 1;
+formats[WebGLRenderingContext.prototype.LUMINANCE_ALPHA] = 1;
+formats[WebGLRenderingContext.prototype.DEPTH_COMPONENT] = 1;
+
+var types = {};
+types[WebGLRenderingContext.prototype.UNSIGNED_BYTE] = 1;
+types[WebGLRenderingContext.prototype.FLOAT] = 4;
+types[36193] = 2; // OESTextureHalfFloat.HALF_FLOAT_OES
+types[WebGLRenderingContext.prototype.UNSIGNED_INT] = 4;
+
 function WebGLShaderWrapper(contextWrapper, type) {
 
-	this.id = (0, _utils.createUUID)();
+	_Wrapper.Wrapper.call(this);
+
 	this.contextWrapper = contextWrapper;
 	this.shader = WebGLRenderingContext.prototype.createShader.apply(this.contextWrapper.context, [type]);
 	this.version = 1;
 	this.source = null;
 	this.type = type;
 }
+
+WebGLShaderWrapper.prototype = Object.create(_Wrapper.Wrapper.prototype);
 
 WebGLShaderWrapper.prototype.shaderSource = function (source) {
 
@@ -440,7 +490,8 @@ WebGLShaderWrapper.prototype.shaderSource = function (source) {
 
 function WebGLUniformLocationWrapper(contextWrapper, program, name) {
 
-	this.id = (0, _utils.createUUID)();
+	_Wrapper.Wrapper.call(this);
+
 	this.contextWrapper = contextWrapper;
 	this.program = program;
 	this.name = name;
@@ -448,8 +499,10 @@ function WebGLUniformLocationWrapper(contextWrapper, program, name) {
 
 	this.program.uniformLocations[this.name] = this;
 
-	//log( 'Location for uniform', name, 'on program', this.program.id );
+	//log( 'Location for uniform', name, 'on program', this.program.uuid );
 }
+
+WebGLUniformLocationWrapper.prototype = Object.create(_Wrapper.Wrapper.prototype);
 
 WebGLUniformLocationWrapper.prototype.getUniformLocation = function () {
 
@@ -458,7 +511,8 @@ WebGLUniformLocationWrapper.prototype.getUniformLocation = function () {
 
 function WebGLProgramWrapper(contextWrapper) {
 
-	this.id = (0, _utils.createUUID)();
+	_Wrapper.Wrapper.call(this);
+
 	this.contextWrapper = contextWrapper;
 	this.program = WebGLRenderingContext.prototype.createProgram.apply(this.contextWrapper.context);
 	this.version = 1;
@@ -467,6 +521,8 @@ function WebGLProgramWrapper(contextWrapper) {
 
 	this.uniformLocations = {};
 }
+
+WebGLProgramWrapper.prototype = Object.create(_Wrapper.Wrapper.prototype);
 
 WebGLProgramWrapper.prototype.attachShader = function () {
 	var _this5 = this;
@@ -481,10 +537,20 @@ WebGLProgramWrapper.prototype.attachShader = function () {
 	});
 };
 
-WebGLProgramWrapper.prototype.highlight = function () {
+WebGLProgramWrapper.prototype.detachShader = function () {
 	var _this6 = this;
 
-	detachShader.apply(this.contextWrapper.context, [this.program, this.fragmentShaderWrapper.shader]);
+	var shaderWrapper = arguments[0];
+
+	return this.contextWrapper.run('detachShader', arguments, function (_) {
+		return WebGLRenderingContext.prototype.detachShader.apply(_this6.contextWrapper.context, [_this6.program, shaderWrapper.shader]);
+	});
+};
+
+WebGLProgramWrapper.prototype.highlight = function () {
+	var _this7 = this;
+
+	this.contextWrapper.context.detachShader.apply(this.contextWrapper.context, [this.program, this.fragmentShaderWrapper.shader]);
 
 	var fs = this.fragmentShaderWrapper.source;
 	fs = fs.replace(/\s+main\s*\(/, ' ShaderEditorInternalMain(');
@@ -497,19 +563,103 @@ WebGLProgramWrapper.prototype.highlight = function () {
 	WebGLRenderingContext.prototype.linkProgram.apply(this.contextWrapper.context, [this.program]);
 
 	Object.keys(this.uniformLocations).forEach(function (name) {
-		_this6.uniformLocations[name].getUniformLocation();
+		_this7.uniformLocations[name].getUniformLocation();
 	});
 };
+
+function WebGLTextureWrapper(contextWrapper) {
+
+	_Wrapper.Wrapper.call(this);
+
+	log('createTexture', this.uuid);
+
+	this.contextWrapper = contextWrapper;
+	this.texture = this.contextWrapper.context.createTexture();
+
+	this.contextWrapper.textures.set(this, this);
+
+	this.size = 0;
+}
+
+WebGLTextureWrapper.prototype = Object.create(_Wrapper.Wrapper.prototype);
+
+WebGLTextureWrapper.prototype.computeTextureMemoryUsage = function () {
+
+	log('texImaged2D', arguments);
+
+	if (arguments.length === 6) {
+
+		// texImage2D(target, level, internalformat, format, type, ImageData? pixels);
+		// texImage2D(target, level, internalformat, format, type, HTMLImageElement? pixels);
+		// texImage2D(target, level, internalformat, format, type, HTMLCanvasElement? pixels);
+		// texImage2D(target, level, internalformat, format, type, HTMLVideoElement? pixels);
+
+		var size = formats[arguments[2]] * types[arguments[4]];
+		if (isNaN(size)) debugger;
+		var width = 0;
+		var height = 0;
+
+		if (arguments[5] instanceof HTMLImageElement) {
+			width = arguments[5].naturalWidth;
+			height = arguments[5].naturalHeight;
+		}
+
+		if (arguments[5] instanceof HTMLCanvasElement || arguments[5] instanceof ImageData) {
+			width = arguments[5].width;
+			height = arguments[5].height;
+		}
+
+		if (arguments[5] instanceof HTMLVideoElement) {
+			width = arguments[5].videoWidth;
+			height = arguments[5].videoHeight;
+		}
+
+		var memory = width * height * size;
+		this.size = memory;
+
+		log('computeTextureMemoryUsage', width, height, size, memory, 'bytes');
+	} else if (arguments.length === 9) {
+
+		// texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView? pixels);
+
+		var size = formats[arguments[2]] * types[arguments[7]];
+		if (isNaN(size)) debugger;
+		var width = arguments[3];
+		var height = arguments[4];
+
+		var memory = width * height * size;
+		this.size = memory;
+
+		log('computeTextureMemoryUsage', width, height, size, memory, 'bytes');
+	} else {
+
+		log('ARGUMENTS LENGTH NOT RECOGNISED');
+	}
+};
+
+function WebGLBufferWrapper(contextWrapper) {
+
+	_Wrapper.Wrapper.call(this);
+
+	this.contextWrapper = contextWrapper;
+	this.buffer = this.contextWrapper.context.createBuffer();
+
+	this.contextWrapper.buffers.set(this, this);
+
+	this.size = 0;
+}
+
+WebGLBufferWrapper.prototype = Object.create(_Wrapper.Wrapper.prototype);
 
 function instrumentWebGLRenderingContext() {
 
 	WebGLRenderingContextWrapper.prototype.createShader = function () {
-		var _this7 = this,
+		var _this8 = this,
 		    _arguments3 = arguments;
 
-		log('create shader');
+		//log( 'create shader' );
 		return this.run('createShader', arguments, function (_) {
-			return new WebGLShaderWrapper(_this7, _arguments3[0]);
+			return new WebGLShaderWrapper(_this8, _arguments3[0]);
 		});
 	};
 
@@ -523,58 +673,58 @@ function instrumentWebGLRenderingContext() {
 	};
 
 	WebGLRenderingContextWrapper.prototype.compileShader = function () {
-		var _this8 = this,
+		var _this9 = this,
 		    _arguments5 = arguments;
 
 		return this.run('compileShader', arguments, function (_) {
-			return WebGLRenderingContext.prototype.compileShader.apply(_this8.context, [_arguments5[0].shader]);
+			return WebGLRenderingContext.prototype.compileShader.apply(_this9.context, [_arguments5[0].shader]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getShaderParameter = function () {
-		var _this9 = this,
+		var _this10 = this,
 		    _arguments6 = arguments;
 
 		return this.run('getShaderParameter', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getShaderParameter.apply(_this9.context, [_arguments6[0].shader, _arguments6[1]]);
+			return WebGLRenderingContext.prototype.getShaderParameter.apply(_this10.context, [_arguments6[0].shader, _arguments6[1]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getShaderInfoLog = function () {
-		var _this10 = this,
+		var _this11 = this,
 		    _arguments7 = arguments;
 
 		return this.run('getShaderInfoLog', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getShaderInfoLog.apply(_this10.context, [_arguments7[0].shader]);
+			return WebGLRenderingContext.prototype.getShaderInfoLog.apply(_this11.context, [_arguments7[0].shader]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.deleteShader = function () {
-		var _this11 = this,
+		var _this12 = this,
 		    _arguments8 = arguments;
 
 		return this.run('deleteShader', arguments, function (_) {
-			return WebGLRenderingContext.prototype.deleteShader.apply(_this11.context, [_arguments8[0].shader]);
+			return WebGLRenderingContext.prototype.deleteShader.apply(_this12.context, [_arguments8[0].shader]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.createProgram = function () {
-		var _this12 = this;
+		var _this13 = this;
 
-		log('create program');
+		//log( 'create program' );
 		this.programCount++;
 		return this.run('createProgram', arguments, function (_) {
-			return new WebGLProgramWrapper(_this12);
+			return new WebGLProgramWrapper(_this13);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.deleteProgram = function (programWrapper) {
-		var _this13 = this;
+		var _this14 = this;
 
 		this.incrementCount();
 		this.programCount--;
 		return this.run('deleteProgram', arguments, function (_) {
-			return WebGLRenderingContext.prototype.deleteProgram.apply(_this13.context, [programWrapper.program]);
+			return WebGLRenderingContext.prototype.deleteProgram.apply(_this14.context, [programWrapper.program]);
 		});
 	};
 
@@ -583,155 +733,199 @@ function instrumentWebGLRenderingContext() {
 		return arguments[0].attachShader(arguments[1]);
 	};
 
+	WebGLRenderingContextWrapper.prototype.detachShader = function () {
+
+		return arguments[0].detachShader(arguments[1]);
+	};
+
 	WebGLRenderingContextWrapper.prototype.linkProgram = function () {
-		var _this14 = this,
+		var _this15 = this,
 		    _arguments9 = arguments;
 
 		return this.run('linkProgram', arguments, function (_) {
-			return WebGLRenderingContext.prototype.linkProgram.apply(_this14.context, [_arguments9[0].program]);
+			return WebGLRenderingContext.prototype.linkProgram.apply(_this15.context, [_arguments9[0].program]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.validateProgram = function () {
-		var _this15 = this,
+		var _this16 = this,
 		    _arguments10 = arguments;
 
 		return this.run('validateProgram', arguments, function (_) {
-			return WebGLRenderingContext.prototype.validateProgram.apply(_this15.context, [_arguments10[0].program]);
+			return WebGLRenderingContext.prototype.validateProgram.apply(_this16.context, [_arguments10[0].program]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getProgramParameter = function () {
-		var _this16 = this,
+		var _this17 = this,
 		    _arguments11 = arguments;
 
 		return this.run('getProgramParameter', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getProgramParameter.apply(_this16.context, [_arguments11[0].program, _arguments11[1]]);
+			return WebGLRenderingContext.prototype.getProgramParameter.apply(_this17.context, [_arguments11[0].program, _arguments11[1]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getProgramInfoLog = function () {
-		var _this17 = this,
+		var _this18 = this,
 		    _arguments12 = arguments;
 
 		return this.run('getProgramInfoLog', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getProgramInfoLog.apply(_this17.context, [_arguments12[0].program]);
+			return WebGLRenderingContext.prototype.getProgramInfoLog.apply(_this18.context, [_arguments12[0].program]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getActiveAttrib = function () {
-		var _this18 = this,
+		var _this19 = this,
 		    _arguments13 = arguments;
 
 		return this.run('getActiveAttrib', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getActiveAttrib.apply(_this18.context, [_arguments13[0].program, _arguments13[1]]);
+			return WebGLRenderingContext.prototype.getActiveAttrib.apply(_this19.context, [_arguments13[0].program, _arguments13[1]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getAttribLocation = function () {
-		var _this19 = this,
+		var _this20 = this,
 		    _arguments14 = arguments;
 
 		return this.run('getAttribLocation', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getAttribLocation.apply(_this19.context, [_arguments14[0].program, _arguments14[1]]);
+			return WebGLRenderingContext.prototype.getAttribLocation.apply(_this20.context, [_arguments14[0].program, _arguments14[1]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.bindAttribLocation = function () {
-		var _this20 = this,
+		var _this21 = this,
 		    _arguments15 = arguments;
 
 		return this.run('bindAttribLocation', arguments, function (_) {
-			return WebGLRenderingContext.prototype.bindAttribLocation.apply(_this20.context, [_arguments15[0].program, _arguments15[1], _arguments15[2]]);
+			return WebGLRenderingContext.prototype.bindAttribLocation.apply(_this21.context, [_arguments15[0].program, _arguments15[1], _arguments15[2]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getActiveUniform = function () {
-		var _this21 = this,
+		var _this22 = this,
 		    _arguments16 = arguments;
 
 		return this.run('getActiveUniform', arguments, function (_) {
-			return WebGLRenderingContext.prototype.getActiveUniform.apply(_this21.context, [_arguments16[0].program, _arguments16[1]]);
+			return WebGLRenderingContext.prototype.getActiveUniform.apply(_this22.context, [_arguments16[0].program, _arguments16[1]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.getUniformLocation = function () {
-		var _this22 = this,
+		var _this23 = this,
 		    _arguments17 = arguments;
 
 		return this.run('getUniformLocation', arguments, function (_) {
-			return new WebGLUniformLocationWrapper(_this22.context, _arguments17[0], _arguments17[1]);
+			return new WebGLUniformLocationWrapper(_this23.context, _arguments17[0], _arguments17[1]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.useProgram = function () {
-		var _this23 = this,
+		var _this24 = this,
 		    _arguments18 = arguments;
 
 		this.useProgramCount++;
 		this.currentProgram = arguments[0];
 		return this.run('useProgram', arguments, function (_) {
-			return WebGLRenderingContext.prototype.useProgram.apply(_this23.context, [_arguments18[0] ? _arguments18[0].program : null]);
+			return WebGLRenderingContext.prototype.useProgram.apply(_this24.context, [_arguments18[0] ? _arguments18[0].program : null]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.createTexture = function () {
-		var _this24 = this,
-		    _arguments19 = arguments;
+		var _this25 = this;
 
 		this.textureCount++;
 		return this.run('createTexture', arguments, function (_) {
-			return WebGLRenderingContext.prototype.createTexture.apply(_this24.context, _arguments19);
+			return new WebGLTextureWrapper(_this25);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.deleteTexture = function () {
-		var _this25 = this,
-		    _arguments20 = arguments;
+		var _this26 = this,
+		    _arguments19 = arguments;
 
 		this.textureCount--;
 		return this.run('deleteTexture', arguments, function (_) {
-			return WebGLRenderingContext.prototype.deleteTexture.apply(_this25.context, _arguments20);
+			return WebGLRenderingContext.prototype.deleteTexture.apply(_this26.context, [_arguments19[0].texture]);
+		});
+	};
+
+	WebGLRenderingContextWrapper.prototype.isTexture = function () {
+		var _this27 = this,
+		    _arguments20 = arguments;
+
+		return this.run('isTexture', arguments, function (_) {
+			return WebGLRenderingContext.prototype.isTexture.apply(_this27.context, [_arguments20[0].texture]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.bindTexture = function () {
-		var _this26 = this,
+		var _this28 = this,
 		    _arguments21 = arguments;
 
+		log('bindTexture', arguments[1]);
+
 		this.bindTextureCount++;
+		if (arguments[0] === WebGLRenderingContext.prototype.TEXTURE_2D) {
+			this.boundTexture2D = arguments[1];
+		}
+		if (arguments[0] === WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP) {
+			this.boundTextureCube = arguments[1];
+		}
+
 		return this.run('bindTexture', arguments, function (_) {
-			return WebGLRenderingContext.prototype.bindTexture.apply(_this26.context, _arguments21);
+			return WebGLRenderingContext.prototype.bindTexture.apply(_this28.context, [_arguments21[0], _arguments21[1] ? _arguments21[1].texture : null]);
+		});
+	};
+
+	WebGLRenderingContextWrapper.prototype.texImage2D = function () {
+		var _this29 = this,
+		    _arguments22 = arguments;
+
+		if (arguments[0] === WebGLRenderingContext.prototype.TEXTURE_2D) {
+			this.boundTexture2D.computeTextureMemoryUsage.apply(this.boundTexture2D, arguments);
+		}
+
+		return this.run('texImage2D', arguments, function (_) {
+			return WebGLRenderingContext.prototype.texImage2D.apply(_this29.context, _arguments22);
+		});
+	};
+
+	WebGLRenderingContextWrapper.prototype.framebufferTexture2D = function () {
+		var _this30 = this,
+		    _arguments23 = arguments;
+
+		return this.run('framebufferTexture2D', arguments, function (_) {
+			return WebGLRenderingContext.prototype.framebufferTexture2D.apply(_this30.context, [_arguments23[0], _arguments23[1], _arguments23[2], _arguments23[3].texture, _arguments23[4]]);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.createFramebuffer = function () {
-		var _this27 = this,
-		    _arguments22 = arguments;
+		var _this31 = this,
+		    _arguments24 = arguments;
 
 		this.framebufferCount++;
 		return this.run('createFramebuffer', arguments, function (_) {
-			return WebGLRenderingContext.prototype.createFramebuffer.apply(_this27.context, _arguments22);
+			return WebGLRenderingContext.prototype.createFramebuffer.apply(_this31.context, _arguments24);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.deleteFramebuffer = function () {
-		var _this28 = this,
-		    _arguments23 = arguments;
+		var _this32 = this,
+		    _arguments25 = arguments;
 
 		this.framebufferCount--;
 		return this.run('deleteFramebuffer', arguments, function (_) {
-			return WebGLRenderingContext.prototype.deleteFramebuffer.apply(_this28.context, _arguments23);
+			return WebGLRenderingContext.prototype.deleteFramebuffer.apply(_this32.context, _arguments25);
 		});
 	};
 
 	WebGLRenderingContextWrapper.prototype.bindFramebuffer = function () {
-		var _this29 = this,
-		    _arguments24 = arguments;
+		var _this33 = this,
+		    _arguments26 = arguments;
 
 		this.bindFramebufferCount++;
 		return this.run('bindFramebuffer', arguments, function (_) {
-			return WebGLRenderingContext.prototype.bindFramebuffer.apply(_this29.context, _arguments24);
+			return WebGLRenderingContext.prototype.bindFramebuffer.apply(_this33.context, _arguments26);
 		});
 	};
 
@@ -745,7 +939,7 @@ function instrumentWebGLRenderingContext() {
 		originalMethods[method] = original;
 
 		WebGLRenderingContextWrapper.prototype[method] = function () {
-			var _this30 = this;
+			var _this34 = this;
 
 			var args = new Array(arguments.length);
 			for (var i = 0, l = arguments.length; i < l; i++) {
@@ -754,15 +948,45 @@ function instrumentWebGLRenderingContext() {
 			if (!args[0]) return;
 			args[0] = args[0].uniformLocation;
 			return this.run(method, args, function (_) {
-				return original.apply(_this30.context, args);
+				return original.apply(_this34.context, args);
 			});
 		};
 	});
+
+	WebGLRenderingContextWrapper.prototype.createBuffer = function () {
+		var _this35 = this;
+
+		return this.run('createBuffer', arguments, function (_) {
+			return new WebGLBufferWrapper(_this35);
+		});
+	};
+
+	WebGLRenderingContextWrapper.prototype.bufferData = function () {
+		var _this36 = this,
+		    _arguments27 = arguments;
+
+		this.boundBuffer.size = arguments[1].length;
+
+		return this.run('bufferData', arguments, function (_) {
+			return WebGLRenderingContext.prototype.bufferData.apply(_this36.context, _arguments27);
+		});
+	};
+
+	WebGLRenderingContextWrapper.prototype.bindBuffer = function () {
+		var _this37 = this,
+		    _arguments28 = arguments;
+
+		this.boundBuffer = arguments[1];
+
+		return this.run('bindBuffer', arguments, function (_) {
+			return WebGLRenderingContext.prototype.bindBuffer.apply(_this37.context, [_arguments28[0], _arguments28[1] ? _arguments28[1].buffer : null]);
+		});
+	};
 }
 
 exports.WebGLRenderingContextWrapper = WebGLRenderingContextWrapper;
 
-},{"./ContextWrapper":2,"./extensions/ANGLEInstancedArraysExtensionWrapper":6,"./extensions/EXTDisjointTimerQueryExtensionWrapper":7,"./extensions/WebGLDebugShadersExtensionWrapper":8,"./utils":10}],4:[function(require,module,exports){
+},{"./ContextWrapper":2,"./Wrapper":5,"./extensions/ANGLEInstancedArraysExtensionWrapper":6,"./extensions/EXTDisjointTimerQueryExtensionWrapper":7,"./extensions/WebGLDebugShadersExtensionWrapper":8}],4:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -791,6 +1015,21 @@ if (!window.document.body) {
 	setupUI();
 }
 
+function formatNumber(value, sizes, decimals) {
+
+	if (value == 0) return '0';
+
+	var k = 1000; // or 1024 for binary
+	var dm = decimals || 2;
+	var i = Math.floor(Math.log(value) / Math.log(k));
+
+	return parseFloat((value / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+var timeSizes = ['ns', 'µs', 'ms', 's'];
+var callSizes = ['', 'K', 'M', 'G'];
+var memorySizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
 function updateUI(e) {
 
 	var d = e.detail;
@@ -815,7 +1054,7 @@ function updateUI(e) {
 			});
 			var shaderTimeStr = shaderTime.join("\r\n");
 
-			blocks.push('<b>Canvas</b>\nID: ' + l.id + '\nCount: ' + l.count + '\nCanvas time: ' + l.jstime + ' ms\n<b>WebGL</b>\nGPU time: ' + l.time + ' ms\nShader time:\n' + shaderTimeStr + '\nPrograms: ' + l.usePrograms + ' / ' + l.programs + '\nTextures: ' + l.bindTextures + ' / ' + l.textures + '\nFramebuffers: ' + l.bindFramebuffers + ' / ' + l.framebuffers + '\ndArrays: ' + l.drawArrays + '\ndElems: ' + l.drawElements + '\nPoints: ' + l.points + '\nLines: ' + l.lines + '\nTriangles: ' + l.triangles + '\nidArrays: ' + l.instancedDrawArrays + '\nidElems: ' + l.instancedDrawElements + '\niPoints: ' + l.instancedPoints + '\niLines: ' + l.instancedLines + '\niTriangles: ' + l.instancedTriangles);
+			blocks.push('<b>Canvas</b>\nID: ' + l.uuid + '\nCount: ' + l.count + '\nCanvas time: ' + l.jstime + ' ms\n<b>WebGL</b>\nTexMem: ' + formatNumber(l.textureMemory, memorySizes, 2) + '\nBufMem: ' + formatNumber(l.bufferMemory, memorySizes, 2) + '\nTotal: ' + formatNumber(l.textureMemory + l.bufferMemory, memorySizes, 2) + '\nGPU time: ' + l.time + ' ms\nShader time:\n' + shaderTimeStr + '\nPrograms: ' + l.usePrograms + ' / ' + l.programs + '\nTextures: ' + l.bindTextures + ' / ' + l.textures + '\nFramebuffers: ' + l.bindFramebuffers + ' / ' + l.framebuffers + '\ndArrays: ' + l.drawArrays + '\ndElems: ' + l.drawElements + '\nPoints: ' + l.points + '\nLines: ' + l.lines + '\nTriangles: ' + l.triangles + '\nidArrays: ' + l.instancedDrawArrays + '\nidElems: ' + l.instancedDrawElements + '\niPoints: ' + l.instancedPoints + '\niLines: ' + l.instancedLines + '\niTriangles: ' + l.instancedTriangles);
 		}
 	});
 
@@ -850,7 +1089,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var Wrapper = function Wrapper() {
     _classCallCheck(this, Wrapper);
 
-    this.id = (0, _utils.createUUID)();
+    this.uuid = (0, _utils.createUUID)();
 };
 
 exports.Wrapper = Wrapper;
@@ -1065,7 +1304,7 @@ exports.WebGLDebugShadersExtensionWrapper = WebGLDebugShadersExtensionWrapper;
 },{"../Wrapper":5}],9:[function(require,module,exports){
 "use strict";
 
-var _utils = require("./utils");
+var _Wrapper = require("./Wrapper");
 
 var _CanvasRenderingContext2DWrapper = require("./CanvasRenderingContext2DWrapper");
 
@@ -1142,13 +1381,16 @@ function ContextFrameData(type) {
 
 function ContextData(contextWrapper) {
 
-	this.id = (0, _utils.createUUID)();
+	_Wrapper.Wrapper.call(this);
+
 	this.queryExt = null;
 	this.contextWrapper = contextWrapper;
 	this.extQueries = [];
 
 	this.metrics = {};
 }
+
+ContextData.prototype = Object.create(_Wrapper.Wrapper.prototype);
 
 var contexts = [];
 var canvasContexts = new WeakMap();
@@ -1270,7 +1512,9 @@ function processRequestAnimationFrames(timestamp) {
 					var wrapper = ctx.contextWrapper;
 
 					ctx.metrics = {
-						id: wrapper.id,
+						id: wrapper.uuid,
+						textureMemory: wrapper.getTextureMemory(),
+						bufferMemory: wrapper.getBufferMemory(),
 						count: wrapper.count,
 						time: (time / 1000000).toFixed(2),
 						jstime: wrapper.JavaScriptTime.toFixed(2),
@@ -1307,10 +1551,10 @@ function processRequestAnimationFrames(timestamp) {
 
 					var queryTime = ext.getQueryObjectEXT(query.query, ext.QUERY_RESULT_EXT);
 					var time = queryTime;
-					if (ctx.metrics.shaderTime[query.program.id] === undefined) {
-						ctx.metrics.shaderTime[query.program.id] = 0;
+					if (ctx.metrics.shaderTime[query.program.uuid] === undefined) {
+						ctx.metrics.shaderTime[query.program.uuid] = 0;
 					}
-					ctx.metrics.shaderTime[query.program.id] += time;
+					ctx.metrics.shaderTime[query.program.uuid] += time;
 					ctx.contextWrapper.drawQueries.splice(i, 1);
 				}
 			});
@@ -1338,7 +1582,7 @@ function processRequestAnimationFrames(timestamp) {
 
 processRequestAnimationFrames();
 
-},{"./CanvasRenderingContext2DWrapper":1,"./WebGLRenderingContextWrapper":3,"./utils":10,"./widget":4}],10:[function(require,module,exports){
+},{"./CanvasRenderingContext2DWrapper":1,"./WebGLRenderingContextWrapper":3,"./Wrapper":5,"./widget":4}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
