@@ -218,7 +218,7 @@ function processRequestAnimationFrames( timestamp ){
 					var wrapper = ctx.contextWrapper;
 
 					ctx.metrics = {
-						id: wrapper.uuid,
+						uuid: wrapper.uuid,
 						textureMemory: wrapper.getTextureMemory(),
 						bufferMemory: wrapper.getBufferMemory(),
 						count: wrapper.count,
