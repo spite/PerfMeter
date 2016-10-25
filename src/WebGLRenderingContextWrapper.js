@@ -394,9 +394,19 @@ WebGLProgramWrapper.prototype.attachShader = function(){
 
 }
 
+WebGLProgramWrapper.prototype.detachShader = function(){
+
+	var shaderWrapper = arguments[ 0 ];
+
+	return this.contextWrapper.run( 'detachShader', arguments, _ => {
+		return WebGLRenderingContext.prototype.detachShader.apply( this.contextWrapper.context, [ this.program, shaderWrapper.shader ] );
+	});
+
+}
+
 WebGLProgramWrapper.prototype.highlight = function(){
 
-	detachShader.apply( this.contextWrapper.context, [ this.program, this.fragmentShaderWrapper.shader ] );
+	this.contextWrapper.context.detachShader.apply( this.contextWrapper.context, [ this.program, this.fragmentShaderWrapper.shader ] );
 
 	var fs = this.fragmentShaderWrapper.source;
 	fs = fs.replace( /\s+main\s*\(/, ' ShaderEditorInternalMain(' );
@@ -578,6 +588,12 @@ function instrumentWebGLRenderingContext(){
 	WebGLRenderingContextWrapper.prototype.attachShader = function(){
 
 		return arguments[ 0 ].attachShader( arguments[ 1 ] );
+
+	}
+
+	WebGLRenderingContextWrapper.prototype.detachShader = function(){
+
+		return arguments[ 0 ].detachShader( arguments[ 1 ] );
 
 	}
 
