@@ -731,10 +731,23 @@ function instrumentWebGLRenderingContext(){
 
 	}
 
+	var cubeMapConsts = [
+		WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_POSITIVE_X,
+		WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_NEGATIVE_X,
+		WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_POSITIVE_Y,
+		WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+		WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_POSITIVE_Z,
+		WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_NEGATIVE_Z
+	];
+
 	WebGLRenderingContextWrapper.prototype.texImage2D = function(){
 
 		if( arguments[ 0 ] === WebGLRenderingContext.prototype.TEXTURE_2D ) {
 			this.boundTexture2D.computeTextureMemoryUsage.apply( this.boundTexture2D, arguments );
+		}
+
+		if( cubeMapConsts.some( v => v === arguments[ 0 ] ) ) {
+			this.boundTextureCube.computeTextureMemoryUsage.apply( this.boundTextureCube, arguments );
 		}
 
 		return this.run( 'texImage2D', arguments, _ => {
