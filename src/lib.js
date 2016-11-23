@@ -142,7 +142,7 @@ ContextWrapper.prototype.endProfile = function () {
 
 exports.ContextWrapper = ContextWrapper;
 
-},{"./Wrapper":5}],3:[function(require,module,exports){
+},{"./Wrapper":4}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -843,7 +843,9 @@ function instrumentWebGLRenderingContext() {
 		var _this26 = this,
 		    _arguments19 = arguments;
 
+		this.textures.delete(arguments[0]);
 		this.textureCount--;
+
 		return this.run('deleteTexture', arguments, function (_) {
 			return WebGLRenderingContext.prototype.deleteTexture.apply(_this26.context, [_arguments19[0].texture]);
 		});
@@ -862,7 +864,7 @@ function instrumentWebGLRenderingContext() {
 		var _this28 = this,
 		    _arguments21 = arguments;
 
-		log('bindTexture', arguments[1]);
+		//log( 'bindTexture', arguments[ 1 ] );
 
 		this.bindTextureCount++;
 		if (arguments[0] === WebGLRenderingContext.prototype.TEXTURE_2D) {
@@ -877,12 +879,20 @@ function instrumentWebGLRenderingContext() {
 		});
 	};
 
+	var cubeMapConsts = [WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_POSITIVE_X, WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_NEGATIVE_X, WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_POSITIVE_Y, WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_NEGATIVE_Y, WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_POSITIVE_Z, WebGLRenderingContext.prototype.TEXTURE_CUBE_MAP_NEGATIVE_Z];
+
 	WebGLRenderingContextWrapper.prototype.texImage2D = function () {
-		var _this29 = this,
-		    _arguments22 = arguments;
+		var _arguments22 = arguments,
+		    _this29 = this;
 
 		if (arguments[0] === WebGLRenderingContext.prototype.TEXTURE_2D) {
 			this.boundTexture2D.computeTextureMemoryUsage.apply(this.boundTexture2D, arguments);
+		}
+
+		if (cubeMapConsts.some(function (v) {
+			return v === _arguments22[0];
+		})) {
+			this.boundTextureCube.computeTextureMemoryUsage.apply(this.boundTextureCube, arguments);
 		}
 
 		return this.run('texImage2D', arguments, function (_) {
@@ -986,95 +996,7 @@ function instrumentWebGLRenderingContext() {
 
 exports.WebGLRenderingContextWrapper = WebGLRenderingContextWrapper;
 
-},{"./ContextWrapper":2,"./Wrapper":5,"./extensions/ANGLEInstancedArraysExtensionWrapper":6,"./extensions/EXTDisjointTimerQueryExtensionWrapper":7,"./extensions/WebGLDebugShadersExtensionWrapper":8}],4:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-	value: true
-});
-var text = document.createElement('div');
-text.setAttribute('id', 'perfmeter-panel');
-
-function setupUI() {
-
-	var fileref = document.createElement("link");
-	fileref.rel = "stylesheet";
-	fileref.type = "text/css";
-	fileref.href = settings.cssPath;
-
-	window.document.getElementsByTagName("head")[0].appendChild(fileref);
-
-	window.document.body.appendChild(text);
-
-	window.addEventListener('perfmeter-framedata', updateUI);
-}
-
-if (!window.document.body) {
-	window.addEventListener('load', setupUI);
-} else {
-	setupUI();
-}
-
-function formatNumber(value, sizes, decimals) {
-
-	if (value == 0) return '0';
-
-	var k = 1000; // or 1024 for binary
-	var dm = decimals || 2;
-	var i = Math.floor(Math.log(value) / Math.log(k));
-
-	return parseFloat((value / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-}
-
-var timeSizes = ['ns', 'µs', 'ms', 's'];
-var callSizes = ['', 'K', 'M', 'G'];
-var memorySizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-
-function updateUI(e) {
-
-	var d = e.detail;
-
-	if (d.rAFS === 0 || d.logs.length === 0) {
-		text.style.display = 'none';
-	} else {
-		text.style.display = 'block';
-	}
-
-	var blocks = [];
-
-	blocks.push('Framerate: ' + d.framerate.toFixed(2) + ' FPS\n\tFrame JS time: ' + d.frameTime.toFixed(2) + ' ms\n\trAFS: ' + d.rAFS);
-
-	d.logs.forEach(function (l) {
-
-		if (l.count) {
-
-			var shaderTime = [];
-			Object.keys(l.shaderTime).forEach(function (key) {
-				shaderTime.push(key + ' ' + (l.shaderTime[key] / 1000000).toFixed(2) + ' ms');
-			});
-			var shaderTimeStr = shaderTime.join("\r\n");
-
-			blocks.push('<b>Canvas</b>\nID: ' + l.uuid + '\nCount: ' + l.count + '\nCanvas time: ' + l.jstime + ' ms\n<b>WebGL</b>\nTexMem: ' + formatNumber(l.textureMemory, memorySizes, 2) + '\nBufMem: ' + formatNumber(l.bufferMemory, memorySizes, 2) + '\nTotal: ' + formatNumber(l.textureMemory + l.bufferMemory, memorySizes, 2) + '\nGPU time: ' + l.time + ' ms\nShader time:\n' + shaderTimeStr + '\nPrograms: ' + l.usePrograms + ' / ' + l.programs + '\nTextures: ' + l.bindTextures + ' / ' + l.textures + '\nFramebuffers: ' + l.bindFramebuffers + ' / ' + l.framebuffers + '\ndArrays: ' + l.drawArrays + '\ndElems: ' + l.drawElements + '\nPoints: ' + l.points + '\nLines: ' + l.lines + '\nTriangles: ' + l.triangles + '\nidArrays: ' + l.instancedDrawArrays + '\nidElems: ' + l.instancedDrawElements + '\niPoints: ' + l.instancedPoints + '\niLines: ' + l.instancedLines + '\niTriangles: ' + l.instancedTriangles);
-		}
-	});
-
-	blocks.push('<b>Browser</b>\nMem: ' + (performance.memory.usedJSHeapSize / (1024 * 1024)).toFixed(2) + '/' + (performance.memory.totalJSHeapSize / (1024 * 1024)).toFixed(2));
-
-	if (settings.showGPUInfo) blocks.push(glInfo);
-
-	text.innerHTML = blocks.join("\r\n\r\n");
-}
-
-var glInfo = '';
-
-function setInfo(info) {
-
-	glInfo = info;
-}
-
-exports.setInfo = setInfo;
-
-},{}],5:[function(require,module,exports){
+},{"./ContextWrapper":2,"./Wrapper":4,"./extensions/ANGLEInstancedArraysExtensionWrapper":5,"./extensions/EXTDisjointTimerQueryExtensionWrapper":6,"./extensions/WebGLDebugShadersExtensionWrapper":7}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1094,7 +1016,7 @@ var Wrapper = function Wrapper() {
 
 exports.Wrapper = Wrapper;
 
-},{"./utils":10}],6:[function(require,module,exports){
+},{"./utils":9}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1143,7 +1065,7 @@ ANGLEInstancedArraysExtensionWrapper.prototype.vertexAttribDivisorANGLE = functi
 
 exports.ANGLEInstancedArraysExtensionWrapper = ANGLEInstancedArraysExtensionWrapper;
 
-},{"../Wrapper":5}],7:[function(require,module,exports){
+},{"../Wrapper":4}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1274,7 +1196,7 @@ EXTDisjointTimerQueryExtensionWrapper.prototype.getQueryEXT = function (target, 
 
 exports.EXTDisjointTimerQueryExtensionWrapper = EXTDisjointTimerQueryExtensionWrapper;
 
-},{"../Wrapper":5}],8:[function(require,module,exports){
+},{"../Wrapper":4}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1301,7 +1223,7 @@ WebGLDebugShadersExtensionWrapper.prototype.getTranslatedShaderSource = function
 
 exports.WebGLDebugShadersExtensionWrapper = WebGLDebugShadersExtensionWrapper;
 
-},{"../Wrapper":5}],9:[function(require,module,exports){
+},{"../Wrapper":4}],8:[function(require,module,exports){
 "use strict";
 
 var _Wrapper = require("./Wrapper");
@@ -1401,10 +1323,10 @@ HTMLCanvasElement.prototype.getContext = function () {
 
 	var c = canvasContexts.get(this);
 	if (c) {
-		log(arguments, '(CACHED)');
+		log('getContext', arguments, '(CACHED)');
 		return c;
 	} else {
-		log(arguments);
+		log('getContext', arguments);
 	}
 
 	var context = getContext.apply(this, arguments);
@@ -1512,7 +1434,7 @@ function processRequestAnimationFrames(timestamp) {
 					var wrapper = ctx.contextWrapper;
 
 					ctx.metrics = {
-						id: wrapper.uuid,
+						uuid: wrapper.uuid,
 						textureMemory: wrapper.getTextureMemory(),
 						bufferMemory: wrapper.getBufferMemory(),
 						count: wrapper.count,
@@ -1582,7 +1504,7 @@ function processRequestAnimationFrames(timestamp) {
 
 processRequestAnimationFrames();
 
-},{"./CanvasRenderingContext2DWrapper":1,"./WebGLRenderingContextWrapper":3,"./Wrapper":5,"./widget":4}],10:[function(require,module,exports){
+},{"./CanvasRenderingContext2DWrapper":1,"./WebGLRenderingContextWrapper":3,"./Wrapper":4,"./widget":10}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1599,4 +1521,92 @@ function createUUID() {
 
 exports.createUUID = createUUID;
 
-},{}]},{},[9]);
+},{}],10:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+var text = document.createElement('div');
+text.setAttribute('id', 'perfmeter-panel');
+
+function setupUI() {
+
+	var fileref = document.createElement("link");
+	fileref.rel = "stylesheet";
+	fileref.type = "text/css";
+	fileref.href = settings.cssPath;
+
+	window.document.getElementsByTagName("head")[0].appendChild(fileref);
+
+	window.document.body.appendChild(text);
+
+	window.addEventListener('perfmeter-framedata', updateUI);
+}
+
+if (!window.document.body) {
+	window.addEventListener('load', setupUI);
+} else {
+	setupUI();
+}
+
+function formatNumber(value, sizes, decimals) {
+
+	if (value == 0) return '0';
+
+	var k = 1000; // or 1024 for binary
+	var dm = decimals || 2;
+	var i = Math.floor(Math.log(value) / Math.log(k));
+
+	return parseFloat((value / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+var timeSizes = ['ns', 'µs', 'ms', 's'];
+var callSizes = ['', 'K', 'M', 'G'];
+var memorySizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
+function updateUI(e) {
+
+	var d = e.detail;
+
+	if (d.rAFS === 0 || d.logs.length === 0) {
+		text.style.display = 'none';
+	} else {
+		text.style.display = 'block';
+	}
+
+	var blocks = [];
+
+	blocks.push('Framerate: ' + d.framerate.toFixed(2) + ' FPS\n\tFrame JS time: ' + d.frameTime.toFixed(2) + ' ms\n\trAFS: ' + d.rAFS);
+
+	d.logs.forEach(function (l) {
+
+		if (l.count) {
+
+			var shaderTime = [];
+			Object.keys(l.shaderTime).forEach(function (key) {
+				shaderTime.push(key + ' ' + (l.shaderTime[key] / 1000000).toFixed(2) + ' ms');
+			});
+			var shaderTimeStr = shaderTime.join("\r\n");
+
+			blocks.push('<b>Canvas</b>\nID: ' + l.uuid + '\nCount: ' + l.count + '\nCanvas time: ' + l.jstime + ' ms\n<b>WebGL</b>\nTexMem: ' + formatNumber(l.textureMemory, memorySizes, 2) + '\nBufMem: ' + formatNumber(l.bufferMemory, memorySizes, 2) + '\nTotal: ' + formatNumber(l.textureMemory + l.bufferMemory, memorySizes, 2) + '\nGPU time: ' + l.time + ' ms\nShader time:\n' + shaderTimeStr + '\nPrograms: ' + l.usePrograms + ' / ' + l.programs + '\nTextures: ' + l.bindTextures + ' / ' + l.textures + '\nFramebuffers: ' + l.bindFramebuffers + ' / ' + l.framebuffers + '\ndArrays: ' + l.drawArrays + '\ndElems: ' + l.drawElements + '\nPoints: ' + l.points + '\nLines: ' + l.lines + '\nTriangles: ' + l.triangles + '\nidArrays: ' + l.instancedDrawArrays + '\nidElems: ' + l.instancedDrawElements + '\niPoints: ' + l.instancedPoints + '\niLines: ' + l.instancedLines + '\niTriangles: ' + l.instancedTriangles);
+		}
+	});
+
+	blocks.push('<b>Browser</b>\nMem: ' + (performance.memory.usedJSHeapSize / (1024 * 1024)).toFixed(2) + '/' + (performance.memory.totalJSHeapSize / (1024 * 1024)).toFixed(2));
+
+	if (settings.showGPUInfo) blocks.push(glInfo);
+
+	text.innerHTML = blocks.join("\r\n\r\n");
+}
+
+var glInfo = '';
+
+function setInfo(info) {
+
+	glInfo = info;
+}
+
+exports.setInfo = setInfo;
+
+},{}]},{},[8]);
