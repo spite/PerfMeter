@@ -5,8 +5,9 @@ log( 'Background', extensionId );
 
 var settings = {};
 var script = '';
-var intrumentScript = '';
+var instrumentScript = '';
 var commonScript = '';
+var stylesheet = '';
 
 var defaultSettings = {
 
@@ -25,6 +26,7 @@ function buildScript( s ) {
 
 	settings.cssPath = chrome.extension.getURL( 'css/styles.css' );
 	settings.fontPath = chrome.extension.getURL( 'css/Roboto_Mono/RobotoMono-Regular.ttf' );
+	settings.stylesheet = stylesheet;
 
 	script = `
 "use strict";
@@ -38,7 +40,7 @@ if( !window[ '${extensionId}_instrumented' ] ) {
 
 	${commonScript}
 
-	${intrumentScript}
+	${instrumentScript}
 
 	log( 'Canvas Instrumentation', document.location.href, settings );
 	post( { method: 'ready' } );
@@ -51,7 +53,8 @@ if( !window[ '${extensionId}_instrumented' ] ) {
 
 Promise.all( [
 	loadSettings().then( res => { settings = res; } ),
-	fetch( chrome.extension.getURL( './src/lib.js' ) ).then( res => res.text() ).then( res => intrumentScript = res ),
+	fetch( chrome.extension.getURL( './css/styles.css' ) ).then( res => res.text() ).then( res => stylesheet = res ),
+	fetch( chrome.extension.getURL( './src/lib.js' ) ).then( res => res.text() ).then( res => instrumentScript = res ),
 	fetch( chrome.extension.getURL( 'script-common.js' ) ).then( res => res.text() ).then( res => commonScript = res ),
 ] ).then( () => {
 	buildScript();
