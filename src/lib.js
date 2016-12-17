@@ -886,7 +886,9 @@ function instrumentWebGLRenderingContext() {
 		    _this29 = this;
 
 		if (arguments[0] === WebGLRenderingContext.prototype.TEXTURE_2D) {
-			this.boundTexture2D.computeTextureMemoryUsage.apply(this.boundTexture2D, arguments);
+			if (this.boundTexture2D) {
+				this.boundTexture2D.computeTextureMemoryUsage.apply(this.boundTexture2D, arguments);
+			}
 		}
 
 		if (cubeMapConsts.some(function (v) {
