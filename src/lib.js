@@ -1534,12 +1534,15 @@ text.setAttribute('id', 'perfmeter-panel');
 
 function setupUI() {
 
-	var fileref = document.createElement("link");
-	fileref.rel = "stylesheet";
-	fileref.type = "text/css";
-	fileref.href = settings.cssPath;
+	/*const fileref = document.createElement("link");
+ fileref.rel = "stylesheet";
+ fileref.type = "text/css";
+ fileref.href = settings.cssPath;
+ 	window.document.getElementsByTagName("head")[0].appendChild(fileref);*/
 
-	window.document.getElementsByTagName("head")[0].appendChild(fileref);
+	var node = window.document.createElement('style');
+	node.innerHTML = settings.stylesheet;
+	window.document.body.appendChild(node);
 
 	window.document.body.appendChild(text);
 
