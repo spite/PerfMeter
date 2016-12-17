@@ -743,7 +743,9 @@ function instrumentWebGLRenderingContext(){
 	WebGLRenderingContextWrapper.prototype.texImage2D = function(){
 
 		if( arguments[ 0 ] === WebGLRenderingContext.prototype.TEXTURE_2D ) {
-			this.boundTexture2D.computeTextureMemoryUsage.apply( this.boundTexture2D, arguments );
+			if( this.boundTexture2D ) {
+				this.boundTexture2D.computeTextureMemoryUsage.apply( this.boundTexture2D, arguments );
+			}
 		}
 
 		if( cubeMapConsts.some( v => v === arguments[ 0 ] ) ) {
